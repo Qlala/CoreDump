@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Fichiers sources">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Fichiers d%27en-tête">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Lib">
+      <UniqueIdentifier>{8eba5cf3-cf79-4f97-a3f8-6bb39cd317f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib\xdelta">
+      <UniqueIdentifier>{b9e8d493-6284-4fc2-871c-4258817ef491}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib\zllib">
+      <UniqueIdentifier>{27e10854-a2f8-42e7-b094-710382ba3c85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers d%27en-tête\Fichiers de ressources">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Fichiers d%27en-tête\lib">
+      <UniqueIdentifier>{7b73085a-af79-432c-8bf8-321b47b3f75b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers d%27en-tête\Implementation">
+      <UniqueIdentifier>{2c206bab-8f1f-40f7-afa7-a235427ce74c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers sources\src">
+      <UniqueIdentifier>{d1fe7cc8-3acc-4343-a31c-32b923730c1c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers sources\src\Implementation">
+      <UniqueIdentifier>{8b077bb6-8965-40ac-bf1c-17fa9e049c82}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="lib\xdelta-release3_1_apl\xdelta3\xdelta3.h">
+      <Filter>Lib\xdelta</Filter>
+    </ClInclude>
+    <ClInclude Include="xdelta_conf.h">
+      <Filter>Lib\xdelta</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\zlib-1.2.11\zlib.h">
+      <Filter>Fichiers d%27en-tête\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\fossil-2.8\delta.h">
+      <Filter>Fichiers d%27en-tête\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CoreDumpImpl.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CoreDumpTop.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CoreDumpType.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CoreDumpUtils.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CoreDumpBlock.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CoreDumpConfig.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CoreDumpHeader.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="include\DeflateImplementation.h">
+      <Filter>Fichiers d%27en-tête\Implementation</Filter>
+    </ClInclude>
+    <ClInclude Include="include\DeltaImplementation.h">
+      <Filter>Fichiers d%27en-tête\Implementation</Filter>
+    </ClInclude>
+    <ClInclude Include="include\SeparatedFileImplementation.h">
+      <Filter>Fichiers d%27en-tête\Implementation</Filter>
+    </ClInclude>
+    <ClInclude Include="include\xdelta_conf.h">
+      <Filter>Fichiers d%27en-tête\Implementation</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="lib\zlib-1.2.11\adler32.c">
+      <Filter>Lib\zllib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\zlib-1.2.11\compress.c">
+      <Filter>Lib\zllib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\zlib-1.2.11\crc32.c">
+      <Filter>Lib\zllib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\zlib-1.2.11\deflate.c">
+      <Filter>Lib\zllib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\zlib-1.2.11\gzclose.c">
+      <Filter>Lib\zllib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\zlib-1.2.11\gzlib.c">
+      <Filter>Lib\zllib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\zlib-1.2.11\gzread.c">
+      <Filter>Lib\zllib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\zlib-1.2.11\gzwrite.c">
+      <Filter>Lib\zllib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\zlib-1.2.11\infback.c">
+      <Filter>Lib\zllib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\zlib-1.2.11\inffast.c">
+      <Filter>Lib\zllib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\zlib-1.2.11\inflate.c">
+      <Filter>Lib\zllib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\zlib-1.2.11\inftrees.c">
+      <Filter>Lib\zllib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\zlib-1.2.11\trees.c">
+      <Filter>Lib\zllib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\zlib-1.2.11\uncompr.c">
+      <Filter>Lib\zllib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\zlib-1.2.11\zutil.c">
+      <Filter>Lib\zllib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\xdelta-release3_1_apl\xdelta3\xdelta3.c">
+      <Filter>Lib\xdelta</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CoreDumpBlock.c">
+      <Filter>Fichiers sources\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CoreDumpHeader.c">
+      <Filter>Fichiers sources\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CoreDumpImpl.c">
+      <Filter>Fichiers sources\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CoreDumpTop.c">
+      <Filter>Fichiers sources\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CoreDumpUtils.c">
+      <Filter>Fichiers sources\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DeflateImplementation.c">
+      <Filter>Fichiers sources\src\Implementation</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DeltaImplementation.c">
+      <Filter>Fichiers sources\src\Implementation</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SeparatedFileImplementation.c">
+      <Filter>Fichiers sources\src\Implementation</Filter>
+    </ClCompile>
+    <ClCompile Include="CoreDumpWriter.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
