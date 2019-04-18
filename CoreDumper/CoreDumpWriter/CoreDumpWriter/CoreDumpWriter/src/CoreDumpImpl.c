@@ -11,7 +11,9 @@ CoreDumpFile* cd_CreateFile(char * filename){
 	CoreDumpFile* test = cdTop_CreateNewDumpFile(top,filename);
 	/* */
 	cdSepFile_SetTop(test, COMPRESSION_AND_SEPARATION_DEPTH_LEVEL);
+#ifdef ACTIVATE_COMPRESSION
 	cdDef_Enc_SetTop_func(top, COMPRESSION_AND_SEPARATION_DEPTH_LEVEL);
+#endif // ACTIVATE_COMPRESSION
 	cdDelta_SetImpl(top);
 	return test;
 }
@@ -27,7 +29,9 @@ void cd_addFrame_P(CoreDumpFile * cdfptr, char * frame, int64_t size_frame) {
 void cd_CloseFile(CoreDumpFile * cdfptr) {
 	CoreDumpTop* top = cdfptr->top;
 	cdTop_CloseDumpFile(cdfptr);
+#ifdef ACTIVATE_COMPRESSION
 	cdDef_CleanTop(top);
+#endif // ACTIVATE_COMPRESSION
 	cdDelta_CleanTop(top);
 	cdSepFile_CleanTop(top);		
 }

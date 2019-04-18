@@ -39,9 +39,6 @@
     <ClInclude Include="lib\xdelta-release3_1_apl\xdelta3\xdelta3.h">
       <Filter>Lib\xdelta</Filter>
     </ClInclude>
-    <ClInclude Include="xdelta_conf.h">
-      <Filter>Lib\xdelta</Filter>
-    </ClInclude>
     <ClInclude Include="lib\zlib-1.2.11\zlib.h">
       <Filter>Fichiers d%27en-tête\lib</Filter>
     </ClInclude>
@@ -80,6 +77,9 @@
     </ClInclude>
     <ClInclude Include="include\xdelta_conf.h">
       <Filter>Fichiers d%27en-tête\Implementation</Filter>
+    </ClInclude>
+    <ClInclude Include="include\xdelta3_conf.h">
+      <Filter>Lib\xdelta</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

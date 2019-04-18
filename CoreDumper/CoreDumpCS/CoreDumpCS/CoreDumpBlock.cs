@@ -46,10 +46,11 @@ namespace CoreDumper
         }
         public Stream RetrieveFrame(long f, Stream st,long outputSize,bool DirectAcces=false)
         {
-
+            Console.WriteLine("bloc fini :" +isFinished()+" et block feuille:"+isBaseBlock());
             long pred = PredictFramePosition(f, st);
-            if(FrameInBlock>0) Console.WriteLine("frame prédite :" + (f / predFramePerBlock)* predFramePerBlock + " : Pos=" + pred +"(entre "+ FirstFrame+"et"+LastFrame +")");
-            if (pred >= 0 && pred!=st.Length)
+            if(predFramePerBlock>0) Console.WriteLine("frame prédite :" + (f / predFramePerBlock)* predFramePerBlock + " : Pos=" + pred +"(entre "+ FirstFrame+"et"+LastFrame +")");
+            else Console.WriteLine("frame prédite :erreur" + " : Pos=" + pred + "(entre " + FirstFrame + "et" + LastFrame + ")");
+            if (pred >= 0 && pred<st.Length)
             {
                 st.Seek(pred, SeekOrigin.Begin);
                 Stream tmp_temp_st = st;
@@ -60,8 +61,8 @@ namespace CoreDumper
                     int size=(int)(end_pos - pred);
                     byte[] buff = new byte[size];
                     st.Read(buff, 0, (size));
-                    tmp_temp_st = new FileStream(Encoding.ASCII.GetString(buff), FileMode.Open, FileAccess.Read);
                     Console.WriteLine("fichier différent :" + Encoding.ASCII.GetString(buff));
+                    tmp_temp_st = new FileStream(Encoding.ASCII.GetString(buff), FileMode.Open, FileAccess.Read); 
                     pred = 0;
                 }
                 Stream temp_st = tmp_temp_st;

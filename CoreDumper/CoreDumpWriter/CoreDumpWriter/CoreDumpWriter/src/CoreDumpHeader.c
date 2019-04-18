@@ -196,21 +196,33 @@ int64_t  cdHeader_PredictFramePosition_F(coreDumpHeader* cdptr, int64_t f, FILE*
 		else if (f >= cdptr->firstFrame && f < cdptr->lastFrame)//comme d'habitude
 		{
 
-			int64_t  approx = cdptr->startPosition + cdptr->headerSize + ((cdptr->predBlockSize) * ((f - cdptr->firstFrame) / cdptr->predFramePerBlock)) - 1;
+			int64_t  approx = cdptr->startPosition + cdptr->headerSize + (cdptr->predBlockSize * ((f-cdptr->firstFrame) / cdptr->predFramePerBlock))-1;
 			int64_t  last_pos = _ftelli64(fst);
 			char b;
 			//byte[] b = new byte[1];
 			int i = 0;
+			clearerr(fst);
 			_fseeki64(fst, approx, SEEK_SET);
 			//st.Seek(approx, SeekOrigin.Begin);
 
 			do
 			{
 				b=fgetc(fst);
+				
 				i++;
 			} while (b != MARK_CHAR && i < cdptr->predBlockSize && !feof(fst));//on trouve le caractère de départ ou on dépasse la taille d'un bloc 
-															 //TODO: possiblement erooné ou sur-limité
-			int64_t  pos = _ftelli64(fst)+((feof(fst))?0:0);
+			if (b != MARK_CHAR) {
+				printf("marqueur pas trouve\n");
+				if (b == EOF) {
+					printf("fin de fichier possiblement atteinte\n");
+				}
+			}
+			if (feof(fst)) {
+				printf("fin du fcihier atteint\n");
+			}
+			
+			//TODO: possiblement erooné ou sur-limité
+			int64_t  pos = _ftelli64(fst);
 			_fseeki64(fst, last_pos, SEEK_SET);//on remet en bonne position
 			return pos;
 
@@ -227,16 +239,22 @@ int64_t  cdHeader_PredictFramePosition_F(coreDumpHeader* cdptr, int64_t f, FILE*
 //TODO a verifier => pas sur (dépend de l'ajout pour savoir si il sera invalid )
 int cdHeader_PredictHit_F(coreDumpHeader* cdptr, FILE* fst)
 {
-	int64_t  approx_fin = cdptr->headerSize + (cdptr->predBlockSize * (cdptr->lastFrame - 1 - cdptr->firstFrame) / cdptr->predFramePerBlock);//approx de la prediction de la fin du block//
+	int64_t  approx_fin = cdptr->startPosition+cdptr->headerSize + cdptr->predBlockSize * ((cdptr->lastFrame - 1 - cdptr->firstFrame) / cdptr->predFramePerBlock);//approx de la prediction de la fin du block//
 	int64_t  pred_fin = cdHeader_PredictFramePosition_F(cdptr, cdptr->lastFrame - 1, fst);
 	int64_t  after_end = cdHeader_PredictFramePosition_F(cdptr, cdptr->lastFrame, fst);//predicition de fin
 	int64_t  pred_debut = cdHeader_PredictFramePosition_F(cdptr, cdptr->firstFrameOfLastBlock, fst);//predicition du début
-	if (!(pred_debut == (cdptr->lastAddedBlockPos + cdptr->startPosition) && ((pred_fin == (cdptr->lastAddedBlockPos + cdptr->startPosition) && after_end >= cdptr->totalSize+cdptr->startPosition) || cdptr->predFramePerBlock == 1)))
+	if (!(pred_debut == (cdptr->lastAddedBlockPos + cdptr->startPosition) && ((pred_fin == (cdptr->lastAddedBlockPos + cdptr->startPosition) && after_end >= cdptr->totalSize + cdptr->startPosition) || cdptr->predFramePerBlock == 1)))
 	{
+		printf("echec predicteur : \n");
+	}
+	else {
+		printf("reussite predicteur : \n");
+	}
 		int64_t  raw_approx = cdptr->startPosition + cdptr->headerSize + (cdptr->predBlockSize * ((cdptr->firstFrameOfLastBlock - cdptr->firstFrame) / cdptr->predFramePerBlock));
 		//Console.WriteLine("echec de predicteur : r_a=" + raw_approx + " approx_fin=" + approx_fin + " pred=" + pred_debut + " after=" + after_end + "lastblock_pos=" + lastAddedBlockPos + ":real=" + (lastAddedBlockPos + startPosition) + " fFrameofLastBlock=" + firstFrameOfLastBlock + " fperblock=" + predFramePerBlock + "predbsize=" + predBlockSize + " totalsize=" + totalSize + " sp=" + StartPosition);
-		printf("echec de predicteur : r_a=%lli approx_fin=%lli pred=%lli pred_fin=%lli after=%lli lastblock_pos=%lli:real=%lli fFrameofLastBlock=%lli fperblock=%lli predbsize=%lli totalsize=%lli sp=%lli \n",raw_approx,approx_fin,pred_debut,pred_fin,after_end,cdptr->lastAddedBlockPos,cdptr->lastAddedBlockPos+cdptr->startPosition,cdptr->firstFrameOfLastBlock,cdptr->predFramePerBlock,cdptr->predBlockSize,cdptr->totalSize, cdptr->startPosition);
-	}
+		printf("-information predicteur : r_a=%lli approx_fin=%lli pred=%lli pred_fin=%lli after=%lli lastblock_pos=%lli:real=%lli fFrameofLastBlock=%lli fperblock=%lli predbsize=%lli totalsize=%lli sp=%lli \n",raw_approx,approx_fin,pred_debut,pred_fin,after_end,cdptr->lastAddedBlockPos,cdptr->lastAddedBlockPos+cdptr->startPosition,cdptr->firstFrameOfLastBlock,cdptr->predFramePerBlock,cdptr->predBlockSize,cdptr->totalSize, cdptr->startPosition);
+	//}
+
 	return pred_debut == (cdptr->lastAddedBlockPos + cdptr->startPosition) && ((pred_fin == (cdptr->lastAddedBlockPos + cdptr->startPosition) && after_end >= cdptr->totalSize + cdptr->startPosition) || cdptr->predFramePerBlock == 1);//on verifie qu'on aurra le bon résultat.
 }
 int64_t  cdHeader_SearchBlockEnd_F(coreDumpHeader* cdptr, FILE* fst)

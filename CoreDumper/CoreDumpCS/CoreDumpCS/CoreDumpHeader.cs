@@ -277,6 +277,10 @@ namespace CoreDumper
         {
             st.WriteByte(MARK_CHAR);
         }
+        public bool isFinished()
+        {
+            return (configuration & (byte)config_flags.FINISHED)>0;
+        }
 
         public void Dispose()
         {

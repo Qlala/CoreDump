@@ -401,6 +401,94 @@ namespace CoreDumper
             }
             
         }
+        int DELTA_WINDOW_SIZE =2048;
+        public MemoryStream ApplyDelta(Stream delta,Stream source)
+        {
+            MemoryStream output = new MemoryStream();
+            byte[] buff = new byte[1024];
+            while (delta.Position<delta.Length)
+            {
+                
+                if (delta.ReadByte() == 'C')
+                {
+                    source.Read(buff, 0, DELTA_WINDOW_SIZE);
+                    output.Write(buff, 0, DELTA_WINDOW_SIZE);
+                }
+                else//P
+                {
+                    delta.Read(buff, 0, DELTA_WINDOW_SIZE);
+                    source.Position += DELTA_WINDOW_SIZE;
+                    output.Write(buff, 0, DELTA_WINDOW_SIZE);
+                }
+            }
+            return output;
+        }
+        public byte[] RA_ApplyDelta(long pos,long size,Stream delta, Stream source)
+        {
+            byte[] output = new byte[size];
+            long approx_pos = (pos / DELTA_WINDOW_SIZE)*DELTA_WINDOW_SIZE;
+            long data_copied = 0;
+            long curr_pos=0;
+            byte[] buff = new byte[DELTA_WINDOW_SIZE];
+            while (curr_pos < approx_pos)
+                {
+                    if (delta.ReadByte() == 'C')
+                    {
+                        curr_pos += DELTA_WINDOW_SIZE;
+                    }
+                    else
+                    {
+                        delta.Position += DELTA_WINDOW_SIZE;
+                        curr_pos += DELTA_WINDOW_SIZE;
+                    }
+                }
+            
+            source.Seek(curr_pos, SeekOrigin.Begin);
+            if (curr_pos < pos )
+            {
+               
+                {
+                    if (delta.ReadByte() == 'C')
+                    {
+                        source.Read(buff, 0, DELTA_WINDOW_SIZE);
+                    }
+                    else//P
+                    {
+                        delta.Read(buff, 0, DELTA_WINDOW_SIZE);
+                        source.Position += DELTA_WINDOW_SIZE;
+                    }
+                    buff.Skip((int)(pos - curr_pos)).Take((int)size).ToArray().CopyTo(output, 0);
+                    data_copied += size;
+                }
+
+            }
+
+            while (data_copied+DELTA_WINDOW_SIZE < size)
+            {
+                if (delta.ReadByte() == 'C')
+                {
+                    source.Read(buff, 0, DELTA_WINDOW_SIZE);
+                }
+                else//P
+                {
+                    delta.Read(buff, 0, DELTA_WINDOW_SIZE);
+                    source.Position += DELTA_WINDOW_SIZE;
+                }
+                buff.CopyTo(output,data_copied);
+                data_copied += DELTA_WINDOW_SIZE;
+            }
+            buff = new byte[size - data_copied];
+            if (delta.ReadByte() == 'C')
+            {
+                source.Read(buff, 0, (int)(size-data_copied));
+            }
+            else//P
+            {
+                delta.Read(buff, 0, (int)(size - data_copied));
+            }
+            buff.CopyTo(output, data_copied);
+            return output.ToArray();
+        }
         public MemoryStream ResolveDelta(Stream st,long f)
         {
             byte[] bytes = new byte[4];
@@ -425,8 +513,8 @@ namespace CoreDumper
             int outputsize = 0;
             Stream ref_frame = SearchOriginalFrame(f - delta_ref_f, outputsize);
             ref_frame.ReadByte();
-            return Fossil.Delta.RA_ApplyStream(pos,size,ref_frame, st);
-
+            //return Fossil.Delta.RA_ApplyStream(pos,size,ref_frame, st);
+            return RA_ApplyDelta(pos, size, ref_frame, st);
 
         }
 

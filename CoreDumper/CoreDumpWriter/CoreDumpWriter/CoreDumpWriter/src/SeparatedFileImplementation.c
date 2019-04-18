@@ -16,8 +16,8 @@ int cdSepFile_createDirectory(char* dir) {
 
 
 char* cdSepFile_gen(int depth,int nb,void* x) {
-	char* file_name = *((sepfile_struct*)x)->file_trans;
-	int* count = &((sepfile_struct*)x)->fragment_total;
+	char* file_name = *(((sepfile_struct*)x)->file_trans);
+	int* count = &(((sepfile_struct*)x)->fragment_total);
 	(*count)++;
 	char* file_name_without_ext = malloc(strlen(file_name)+2);
 	char* file_head_end=strrchr(file_name, '.');
@@ -28,7 +28,7 @@ char* cdSepFile_gen(int depth,int nb,void* x) {
 	//make directory if it doesn't exist
 	cdSepFile_createDirectory(file_name_without_ext);
 
-	char* sep_file_name = malloc(2*strlen(file_name) + 10 + (*count)/10);
+	char* sep_file_name = malloc(2*strlen(file_name) + 16 + (*count)/10);
 	sep_file_name[0] = '\0';
 	strcat(sep_file_name, file_name_without_ext);
 	strcat(sep_file_name, "/");

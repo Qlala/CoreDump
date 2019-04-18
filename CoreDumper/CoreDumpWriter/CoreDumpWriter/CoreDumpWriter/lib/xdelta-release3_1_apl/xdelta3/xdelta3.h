@@ -29,7 +29,7 @@
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include "xdelta_conf.h"
+#include "xdelta3_conf.h"
 #include <errno.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -90,7 +90,7 @@
 #endif
 
 #ifndef XD3_DEFAULT_SECONDARY_LEVEL
-#define XD3_DEFAULT_SECONDARY_LEVEL 6
+#define XD3_DEFAULT_SECONDARY_LEVEL -1
 #endif
 
 #ifndef XD3_USE_LARGEFILE64
@@ -299,7 +299,7 @@ typedef uint32_t usize_t;
 #endif
 
 #ifndef NOT_MAIN
-#define NOT_MAIN 0
+#define NOT_MAIN 1
 #endif
 
 /* There are three string matching functions supplied: one fast, one

@@ -67,7 +67,7 @@ namespace MyCoders
 
         public void Code(Stream inStream, Stream outStream, long inSize, long outSize, ICodeProgress progress)
         {
-            outStream.ReadByte();
+            //outStream.ReadByte();
             if (outSize > 0)
             {
                 outStream.SetLength(outSize);
@@ -75,6 +75,7 @@ namespace MyCoders
             using (ICSharpCode.SharpZipLib.Zip.Compression.Streams.InflaterInputStream DStream = new ICSharpCode.SharpZipLib.Zip.Compression.Streams.InflaterInputStream(inStream))
             {
                 DStream.CopyTo(outStream);// incompatibilité avec zlib
+                
             }
             /*
             System.IO.Compression.GZipStream DStream = new System.IO.Compression.GZipStream(inStream, System.IO.Compression.CompressionMode.Decompress,true);

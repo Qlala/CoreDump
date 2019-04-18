@@ -70,7 +70,9 @@ void cdBlock_CreateNewChildFile_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FI
 	remove(cdbptr->nodeFileName);//supression du fichier si il existe déja
 	fopen_s(&cdbptr->nodeFile, cdbptr->nodeFileName, "wb+");
 	//Console.WriteLine("nouveau fichier crée :" + CurrentNodeFileName);
+	printf("nouveau fichier creer : %s\n", cdbptr->nodeFileName);
 	//on inscris dans le fst le nom du fichier
+	_fseeki64(cdbptr->nodeFile, 0, SEEK_SET);
 	cdBlock_WriteFileName_F(cdbptr, fst);
 }
 CoreDumpBlock* cdBlock_CreateNewChild_F(FILE* fst, int64_t  first_frame, int depth_a,int no_write)
@@ -104,7 +106,7 @@ struct dataThreadEncode
 	char* input_name;
 };
 #ifdef _WIN32
-void ThreadProc_Encode(LPVOID lpParameter) {
+DWORD WINAPI ThreadProc_Encode(LPVOID lpParameter) {
 	struct dataThreadEncode* param = lpParameter;
 	cdTop_IncSema(param->cdtptr);
 	param->cdtptr->Encode_FF(param->input, param->output, param->inSize, param->outSize);
@@ -312,6 +314,8 @@ int cdBlock_addFrameTree_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE* fst
 
 		cdBlock_addChildBlock_F(cdbptr->child->header_ptr, cdbptr->header_ptr, cdtptr, fst, cdbptr->depth, &cdbptr->blockCount,0);
 		if (cdHeader_PredictHit_F(cdbptr->header_ptr, fst) && !cdTop_MaxBlockCountReach(cdtptr,cdbptr->depth, cdbptr->blockCount)) {//pas de problème on peut faire une nouvelle branche
+			printf("on continue l'abre de niveau d=%i", cdbptr->depth);
+
 			cdBlock_DeleteBlock(cdbptr->child);
 			cdbptr->child = cdBlock_CreateNewChild_F(fst, cdbptr->header_ptr->lastFrame, cdbptr->depth - 1,0);//CreateNewChild(FileSource);
 
@@ -382,11 +386,13 @@ int cdBlock_addFrameLeaf_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst,
 	cdbptr->blockCount++;
 	if(cdHeader_PredictHit_F(cdbptr->header_ptr,fst)&&!cdTop_MaxBlockCountReach(cdtptr,0,cdbptr->blockCount))
 	{
+		printf("On continue à rajouter des block à la feuille \n");
 		cdHeader_UpdateHeader(cdbptr->header_ptr,fst);
 		return 0;//pas de problème
 	}
 	else
 	{
+		printf("On a fini une feuille");
 		cdHeader_TerminateBlock(cdbptr->header_ptr,fst);
 		/*if (!Top.MaxBlockCountReach(0, blockCount))
 		{
@@ -463,7 +469,7 @@ int cdBlock_addFrameTree_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE* fst
 		if (cdHeader_PredictHit_F(cdbptr->header_ptr, fst) && !cdTop_MaxBlockCountReach(cdtptr, cdbptr->depth, cdbptr->blockCount)) {//pas de problème on peut faire une nouvelle branche
 			cdBlock_DeleteBlock(cdbptr->child);
 			cdbptr->child = cdBlock_CreateNewChild_F(fst, cdbptr->header_ptr->lastFrame, cdbptr->depth - 1, 0);//CreateNewChild(FileSource);
-
+			printf("on continue l'abre de niveau d=%i\n", cdbptr->depth);
 			cdHeader_UpdateHeader(cdbptr->header_ptr, fst);
 
 			return 0;
@@ -505,14 +511,16 @@ int cdBlock_addFrameLeaf_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst,
 			//FileSource.Seek(StartPosition + TotalSize, SeekOrigin.Begin);//on se met la ou on doit ajouter le block encodé
 			
 			fwrite(frame, 1,frame_size, fst);
-			int64_t marker_pos = _ftelli64(fst);
+			
 			//st.CopyTo(FileSource);
 			//BlockMarker(FileSource);//marker de fin de block
 			
 			//addBlockSize(sp, st.Length + 1, 1);
-			printf("frame copie a la position : %lli et marker en : %lli copie de %lli\n", sp, marker_pos, frame_size);
+			
 		}
+		int64_t marker_pos = _ftelli64(fst);
 		cdHeader_BlockMarker_F(fst);//marker de fin de block
+		printf("frame copie a la position : %lli et marker en : %lli copie de %lli\n", sp, marker_pos, size);
 		cdHeader_addBlockSize(cdbptr->header_ptr, sp, size + 1, 1, -1);
 	}
 	cdbptr->blockCount++;
@@ -536,6 +544,11 @@ int cdBlock_addFrameTreeFile_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*
 {
 	if (cdbptr->nodeFile == NULL) {
 		cdBlock_CreateNewChildFile_F(cdbptr, cdtptr, fst);
+		
+		CoreDumpBlock* temp = cdBlock_CreateNewChild_F(cdbptr->nodeFile, cdbptr->child->header_ptr->firstFrame, cdbptr->depth - 1, 0);
+		cdBlock_DeleteBlock(cdbptr->child);
+		cdbptr->child = temp;
+		cdHeader_UpdateHeader(cdbptr->child->header_ptr,cdbptr->nodeFile);
 	}
 	if (cdBlock_addFrame_P(cdbptr->child, cdtptr, cdbptr->nodeFile, frame,frame_size)) {
 		cdBlock_addChildBlockFile_F(cdbptr->child->header_ptr, cdbptr->header_ptr, cdtptr, &cdbptr->nodeFile, cdbptr->nodeFileName, cdbptr->depth, &cdbptr->blockCount, 0);
@@ -551,7 +564,7 @@ int cdBlock_addFrameTreeFile_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*
 		else//le predicteur à échouer il faut arrêter
 		{
 			cdHeader_TerminateBlock(cdbptr->header_ptr, fst);//on met le Block comme terminé (update aussi le header
-			fclose(cdbptr->nodeFile);
+			if (cdbptr->nodeFile != NULL)fclose(cdbptr->nodeFile);
 			cdbptr->nodeFile = NULL;
 			if (!cdTop_MaxBlockCountReach(cdtptr, cdbptr->depth, cdbptr->blockCount))
 			{

@@ -9,4 +9,4 @@
 //DeflateImplementation
 #define CHUNK (1<<10)
 #define COMPRESSION_LEVEL Z_BEST_SPEED 
-//#define ENCODING_DEPTH 1
+
