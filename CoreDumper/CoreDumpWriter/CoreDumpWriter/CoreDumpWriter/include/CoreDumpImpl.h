@@ -1,7 +1,7 @@
 #include "CoreDumpType.h"
 //configuration de l'implémentation
 #define COMPRESSION_AND_SEPARATION_DEPTH_LEVEL 2
-#define ACTIVATE_COMPRESION
+#define ACTIVATE_COMPRESSION
 #define MAX_BLOCK_COUNT_PER_LEVEL 10
 
 //definition des fonction

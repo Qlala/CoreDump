@@ -51,6 +51,8 @@ namespace ConsoleApp1
             long pos = Int64.Parse(Addr_TextBox.Text);
             long size = Int64.Parse(Size_TextBox.Text);
             byte[] data = opener.randomAccesFrame(f, pos, size);
+            //
+            //derniercycle = opener.GetlastFrameNumber();
             DataView.Text = string.Join("", data);
             return;
         }
