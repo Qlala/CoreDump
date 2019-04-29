@@ -82,7 +82,8 @@ int main()
 	}
 	double med_ns = sum_ns / 300;
 	double med_s = sum_s / 300;
-	printf("s=lf% , ns=%lf", med_s, med_ns);
+	printf("moyenne des résultat");
+	printf("s=%llf , ns=%llf\n", med_s, med_ns);
 	cd_CloseFile(test);
 	return 0;
 }
