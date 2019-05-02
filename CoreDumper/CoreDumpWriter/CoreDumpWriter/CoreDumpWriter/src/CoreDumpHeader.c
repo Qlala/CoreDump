@@ -80,7 +80,7 @@ void cdHeader_UpdateFromFile(coreDumpHeader* cdptr, FILE* fst) {
 
 void cdHeader_ReadHeader_F(coreDumpHeader* cdptr, FILE* fst)//le stream est mis à la fin du header ( donc la fonction altère l'état du stream)
 {
-	cdHeader_goStartIndex_F(cdptr, fst);
+	//cdHeader_goStartIndex_F(cdptr, fst);
 	//byte[] bytes = new byte[8];
 	//input.Read(bytes, 0, 8);
 	//totalSize = BitConverter.ToInt64(bytes, 0);
@@ -142,6 +142,7 @@ void cdHeader_WriteHeader_F(coreDumpHeader* cdptr, FILE* fst)//écrie le header d
 	fwrite(&(cdptr->configuration), sizeof(cdptr->configuration), 1, fst);
 	//bytes = BitConverter.GetBytes(configuration);
 	//output.Write(bytes, 0, 1);
+	fflush(fst);
 }
 
 

@@ -46,7 +46,16 @@ namespace CoreDumper
                 return new BlockTree(this, source, depth, first_frame, no_write);
             }
         }
-
+        public Int64 RetrieveFrameCount()
+        {
+            Int64 lastframe=tree.FirstFrame;
+            tree.RetriveFrameCount(Output, ref lastframe);
+            return lastframe;
+        }
+        public Int64 RetrieveFirstFrame()
+        {
+            return tree.FirstFrame;
+        }
 
         virtual public void AddFrame(Stream st)//TODO => améliorable
         {
@@ -401,7 +410,7 @@ namespace CoreDumper
             }
             
         }
-        int DELTA_WINDOW_SIZE =2048;
+        int DELTA_WINDOW_SIZE =1024;
         public MemoryStream ApplyDelta(Stream delta,Stream source)
         {
             MemoryStream output = new MemoryStream();
@@ -443,7 +452,7 @@ namespace CoreDumper
                     }
                 }
             
-            source.Seek(curr_pos, SeekOrigin.Begin);
+            source.Position+=curr_pos;
             if (curr_pos < pos )
             {
                
@@ -499,7 +508,7 @@ namespace CoreDumper
             int outputsize=0;
             Stream ref_frame = SearchOriginalFrame(f-delta_ref_f,outputsize);
             ref_frame.ReadByte();
-            return Fossil.Delta.ApplyStream(ref_frame,st);
+            return ApplyDelta(st,ref_frame);
 
 
         }
@@ -514,7 +523,7 @@ namespace CoreDumper
             Stream ref_frame = SearchOriginalFrame(f - delta_ref_f, outputsize);
             ref_frame.ReadByte();
             //return Fossil.Delta.RA_ApplyStream(pos,size,ref_frame, st);
-            return RA_ApplyDelta(pos, size, ref_frame, st);
+            return RA_ApplyDelta(pos, size, st,ref_frame);
 
         }
 

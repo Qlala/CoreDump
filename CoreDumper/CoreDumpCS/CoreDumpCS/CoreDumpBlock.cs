@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
+using System.Text;
 
 namespace CoreDumper
 {
@@ -44,12 +41,109 @@ namespace CoreDumper
         {
             ;
         }
+        public void RetriveFrameCount(Stream st,ref Int64 foundLastFrame)
+        {
+            if (foundLastFrame > FirstFrame)
+            {
+                Console.WriteLine("block bugé");
+                return;//bloc bugé
+            }
+            else
+            {
+                foundLastFrame = foundLastFrame > LastFrame ? foundLastFrame : LastFrame;
+                Console.WriteLine("FoundlastFrame="+foundLastFrame);
+                try
+                {
+                    BlockType temp = LoadBlockAt(ref st, BlockEnd());
+                    temp.RetriveFrameCount(st, ref foundLastFrame);
+                }
+                catch(Exception e)
+                {
+                    Console.Write("Erreur d'accès");
+                    return;//erreur pas de block ici
+                }
+                return;
+            }
+        }
+
+        private BlockType LoadBlockAt(ref Stream st,long pred)
+        {
+            Console.WriteLine("Chargement du block a la position " + pred);
+            if (pred >= 0 && pred < st.Length)
+            {
+                Int64 ori_pred = pred;
+                st.Seek(pred, SeekOrigin.Begin);
+                if (isExternFile())
+                {
+                    long end_pos = SearchBlockEnd(st);
+                    st.Seek(pred, SeekOrigin.Begin);
+                    int size = (int)(end_pos - pred);
+                    byte[] buff = new byte[size];
+                    st.Read(buff, 0, (size));
+                    Console.WriteLine("fichier différent :" + Encoding.ASCII.GetString(buff));
+                    st = new FileStream(Encoding.ASCII.GetString(buff), FileMode.Open, FileAccess.Read);
+                    pred = 0;
+                }
+                {
+                    if (!isBaseBlock())
+                    {
+                        if (ori_pred == TotalSize + StartPosition)//partie non fini
+                        {
+
+                            BlockType temp = new BlockType(top, pred, 0);
+
+                            temp.ReadHeader(st);//on lis le header
+                            return temp;
+
+                        }
+                        else if (IsCompressed())//Le fichier est compressé
+                        {
+                            Stopwatch sw = new Stopwatch();
+                            sw.Start();
+                            Console.WriteLine("Niveau intermédiare compréssé");
+                            MemoryStream temp_st_2 = new MemoryStream();
+                            Top.Decode(st, temp_st_2, -1, -1);
+                            //on déccode le block
+                            BlockType temp = new BlockType(top, 0, 0);
+                            temp_st_2.Seek(0, SeekOrigin.Begin);
+                            sw.Stop();
+                            Console.WriteLine("deccodage en:" + sw.Elapsed);
+                            temp.ReadHeader(temp_st_2);//on lis le header de depuis le stream qui à été décompréssé
+                            return temp;
+                        }
+                        else
+                        {//on est pas compressé donc on peut se contenter d'ouvrir le steam au bonne endroit
+
+                            BlockType temp = new BlockType(top, pred, 0);
+
+                            temp.ReadHeader(st);//on lis le header
+                            return temp;
+                        }
+
+                    }
+                    else
+                    {
+                        throw new Exception();
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("erreur base block");
+                throw new Exception();
+                //return new BlockType(); ;//erreur on retourne un steam vide
+            }
+        }
+    
+
+
         public Stream RetrieveFrame(long f, Stream st,long outputSize,bool DirectAcces=false)
         {
             Console.WriteLine("bloc fini :" +isFinished()+" et block feuille:"+isBaseBlock());
             long pred = PredictFramePosition(f, st);
             if(predFramePerBlock>0) Console.WriteLine("frame prédite :" + (f / predFramePerBlock)* predFramePerBlock + " : Pos=" + pred +"(entre "+ FirstFrame+"et"+LastFrame +")");
             else Console.WriteLine("frame prédite :erreur" + " : Pos=" + pred + "(entre " + FirstFrame + "et" + LastFrame + ")");
+            long ori_pred = pred;
             if (pred >= 0 && pred<st.Length)
             {
                 st.Seek(pred, SeekOrigin.Begin);
@@ -70,7 +164,7 @@ namespace CoreDumper
                 {
                     if (!isBaseBlock())
                     {
-                        if (pred == TotalSize + StartPosition)//partie non fini
+                        if (ori_pred >= TotalSize + StartPosition)//partie non fini
                         {
 
                             BlockType temp = new BlockType(top, pred, 0);
@@ -104,7 +198,7 @@ namespace CoreDumper
                         }
 
                     }
-                    else
+                    else// cas si on est un bloque de base
                     {
                         if (IsCompressed())//Le fichier est compressé
                         {

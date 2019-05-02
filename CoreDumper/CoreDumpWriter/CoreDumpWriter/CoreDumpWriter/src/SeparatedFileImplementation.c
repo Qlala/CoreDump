@@ -2,6 +2,7 @@
 #include <string.h>
 #include <Windows.h>
 #include "SeparatedFileImplementation.h"
+#include <math.h>
 
 struct sepfile_struct_S{
 	char** file_trans;
@@ -28,14 +29,17 @@ char* cdSepFile_gen(int depth,int nb,void* x) {
 	//make directory if it doesn't exist
 	cdSepFile_createDirectory(file_name_without_ext);
 
-	char* sep_file_name = malloc(2*strlen(file_name) + 16 + (*count)/10);
-	sep_file_name[0] = '\0';
-	strcat(sep_file_name, file_name_without_ext);
-	strcat(sep_file_name, "/");
-	strcat(sep_file_name, file_name_without_ext);
-	strcat(sep_file_name, ".part%i.cd_frag");
+	char* sep_file_name_form = malloc(2*strlen(file_name) + 30);
+	size_t len = 2 * strlen(file_name) + 30 + ceil(log((*count)));
+	char* sep_file_name = malloc(len);
+	sep_file_name_form[0] = '\0';
+	strcat(sep_file_name_form, file_name_without_ext);
+	strcat(sep_file_name_form, "/");
+	strcat(sep_file_name_form, file_name_without_ext);
+	strcat(sep_file_name_form, ".part%i.cd_frag");
 	free(file_name_without_ext);
-	sprintf(sep_file_name, sep_file_name,*count);
+	snprintf(sep_file_name, len ,sep_file_name_form,*count);
+	free(sep_file_name_form);
 	return sep_file_name;
 }
 

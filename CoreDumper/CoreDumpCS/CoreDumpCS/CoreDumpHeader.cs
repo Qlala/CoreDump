@@ -80,6 +80,11 @@ namespace CoreDumper
         {
             st.Seek(startPosition, SeekOrigin.Begin);
         }
+        public void GoBlockEnd(Stream st)
+        {
+            st.Seek(BlockEnd(),SeekOrigin.Begin);
+        }
+
         public void TerminateBlock(Stream st)
         {
             configuration |= (byte)config_flags.FINISHED;
@@ -236,7 +241,7 @@ namespace CoreDumper
             {
                 b = (byte)st.ReadByte();
                 i++;
-            } while (b != MARK_CHAR && i < predBlockSize+1 && st.Position < st.Length && st.Position<StartPosition+TotalSize);//on trouve le caractère de départ ou on dépasse la taille d'un bloc 
+            } while (b != MARK_CHAR && i < predBlockSize+1 && st.Position < st.Length);//on trouve le caractère de départ ou on dépasse la taille d'un bloc 
             long end_pos = st.Position-1;
             st.Seek(last_pos, SeekOrigin.Begin);
             return end_pos;

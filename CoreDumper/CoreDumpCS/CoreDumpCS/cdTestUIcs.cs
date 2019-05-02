@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 using System.Windows.Forms;
 using CoreDumper;
 using MyCoders;
@@ -15,15 +16,16 @@ namespace ConsoleApp1
     {
         CoreDumpDeltaWriter<Deflate_Encoder, Deflate_Decoder> opener;
         long frame_size = 100000000;
-        long last_frame=100;
+        long last_frame=300;
+        long first_frame = 0;
         public void Interface_preset()
         {
             this.Addr_TrackBar.Maximum = (int)frame_size;
             this.Addr_TrackBar.Minimum = 0;
             this.Addr_TrackBar.TickFrequency = 10000;
             this.Frame_TrackBar.TickFrequency = 10000;
-            this.Frame_TrackBar.Maximum = (int)last_frame ;
-            this.Frame_TrackBar.Minimum = 0;
+            this.Frame_TrackBar.Maximum = (int)last_frame-1;
+            this.Frame_TrackBar.Minimum = (int)first_frame;
             this.Addr_TrackBar.Value = 0;
             this.Frame_TrackBar.Value = 0;
             this.Frame_TextBox.Text = "0";
@@ -37,8 +39,11 @@ namespace ConsoleApp1
             opener = new CoreDumpDeltaWriter<Deflate_Encoder, Deflate_Decoder>();
             opener.Decoder = new Deflate_Decoder();
             opener.readOnlyOpen(file_to_open);
+            last_frame=opener.RetrieveFrameCount();
+            first_frame = opener.RetrieveFirstFrame();
+            Stream st= opener.RetriveFrame(0);
+            frame_size = st.Length;
             Interface_preset();
-           
         }
         public async Task UpdataData_task()
         {
@@ -51,7 +56,8 @@ namespace ConsoleApp1
             long pos = Int64.Parse(Addr_TextBox.Text);
             long size = Int64.Parse(Size_TextBox.Text);
             byte[] data = opener.randomAccesFrame(f, pos, size);
-            DataView.Text = string.Join("", data);
+            
+            DataView.Text = string.Join("|", data);
             return;
         }
 

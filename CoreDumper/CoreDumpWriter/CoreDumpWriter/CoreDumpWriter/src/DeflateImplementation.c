@@ -56,6 +56,7 @@ int defImpl_Encode_FF(FILE *source, FILE *dest,int64_t insize,int64_t *outSize)
 			//assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
 			have = CHUNK - strm.avail_out;
 			if (fwrite(out, 1, have, dest) != have || ferror(dest)) {
+				printf("error : %s\n", strerror(dest));
 				(void)deflateEnd(&strm);
 				return Z_ERRNO;
 			}

@@ -125,7 +125,7 @@ void cdTop_rebaseTree(CoreDumpFile* cdfptr) {
 		cdBlock_WriteFileName_F(temp, cdfptr->file);//on écris le nom du fichier de l'abre d'avant dans le nouvelle arbre
 		cdBlock_addChildBlockFile_F(cdfptr->tree->header_ptr, temp->header_ptr, cdfptr->top, &temp->nodeFile, temp->nodeFileName, temp->depth, &temp->blockCount, 0);//on ajoute effectivement l'ancienne arbre(possiblement encode)
 		cdBlock_DeleteBlock(cdfptr->tree);
-		cdfptr->tree = temp;//temp est le nouvelle arbre
+		cdfptr->tree = temp;//temp est le nouvelle arbre(branche)
 		if(cdfptr->tree->nodeFile!=NULL)fclose(cdfptr->tree->nodeFile);
 		cdfptr->tree->nodeFile = NULL;
 
@@ -135,7 +135,7 @@ void cdTop_rebaseTree(CoreDumpFile* cdfptr) {
 	else{//pas de fichier séparé
 		cdBlock_addChildBlock_F(cdfptr->tree->header_ptr, temp->header_ptr, cdfptr->top, cdfptr->file, temp->depth, &temp->blockCount, 1);
 		cdHeader_UpdateHeader(temp->header_ptr, cdfptr->file);
-		cdHeader_BlockEnd(temp->header_ptr);
+		//cdHeader_BlockEnd(temp->header_ptr);
 		cdBlock_DeleteBlock(cdfptr->tree);
 		cdfptr->tree = temp;
 		

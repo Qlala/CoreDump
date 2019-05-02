@@ -69,7 +69,7 @@ int main()
 	struct timespec t1,t2;
 	int64_t sum_ns = 0;
 	int64_t sum_s = 0;
-	for (int i = 0; i < 300; i++) {
+	for (int i = 0; i < 10000; i++) {
 		
 		timespec_get(&t1, TIME_UTC);
 
@@ -77,13 +77,13 @@ int main()
 		timespec_get(&t2, TIME_UTC);
 		std::cout << "frame " << i << " en " << get_time_diff(string_buff, t1, t2) << std::endl;
 		alter_frame(frame_buff, frame_size, 0.000001);
-		sum_ns += t2.tv_nsec - t1.tv_nsec;
-		sum_s += t2.tv_sec - t1.tv_sec;
+		sum_ns += (t2.tv_nsec - t1.tv_nsec);
+		sum_s += (t2.tv_sec - t1.tv_sec);
 	}
-	double med_ns = sum_ns / 300;
-	double med_s = sum_s / 300;
+	double med_ns = sum_ns / 60000;
+	double med_s = sum_s / 60000;
 	printf("moyenne des résultat");
-	printf("s=%llf , ns=%llf\n", med_s, med_ns);
+	printf("s=%f , ns=%f\n", med_s, med_ns);
 	cd_CloseFile(test);
 	return 0;
 }

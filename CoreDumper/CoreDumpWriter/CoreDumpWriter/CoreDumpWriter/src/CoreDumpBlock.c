@@ -77,7 +77,7 @@ void cdBlock_CreateNewChildFile_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FI
 }
 CoreDumpBlock* cdBlock_CreateNewChild_F(FILE* fst, int64_t  first_frame, int depth_a,int no_write)
 {
-	printf("Creation  d'enfant : premiere frame %lli depth=%i en %lli avec no_write=%i\n" , first_frame, depth_a, _ftelli64(fst),no_write);
+	printf("Creation  d'enfant : premiere frame %lli depth=%i en %lli avec no_write=%i\n" , first_frame, depth_a,fst!=NULL? _ftelli64(fst):0,no_write);
 	if (depth_a > 0) {
 		return cdBlock_CreateTree_F(fst, first_frame, depth_a,no_write);
 	}
@@ -99,45 +99,60 @@ void cdBlock_DeleteBlock(CoreDumpBlock* cdbptr) {
 struct dataThreadEncode
 {
 	CoreDumpTop* cdtptr;
-	FILE* input;
-	FILE* output;
 	int64_t inSize;
 	int64_t* outSize;
 	char* input_name;
+	char * output_name;
 };
 #ifdef _WIN32
 DWORD WINAPI ThreadProc_Encode(LPVOID lpParameter) {
 	struct dataThreadEncode* param = lpParameter;
+	printf("Thread de compression lancé de %s vers %s\n", param->input_name, param->output_name);
 	cdTop_IncSema(param->cdtptr);
-	param->cdtptr->Encode_FF(param->input, param->output, param->inSize, param->outSize);
+	FILE * input = fopen(param->input_name, "rb");
+	FILE * output = fopen(param->output_name, "wb");
+	if (!input) {
+		fprintf(stderr, "error opening %s: %s \n", param->input_name, strerror(errno));
+	}
+	if (!output) {
+		fprintf(stderr, "error opening %s: %s \n", param->output_name, strerror(errno));
+	}
+	param->cdtptr->Encode_FF(input, output, param->inSize, param->outSize);
 	cdTop_ReleaseSema(param->cdtptr);
-	fclose(param->input);
-	fclose(param->output);
-	remove(param->input_name);
+	
+	do {
+		fclose(input);
+		fclose(output);
+		remove(param->input_name);
+	}while (rename(param->output_name, param->input_name) != 0);
+	free(param->output_name);
 	free(param->input_name);
 	free(param);
+	return 0;
 }
 #endif // _WIN32
 
 
 
 
-void cdBlock_ThreadedEncode_FF(CoreDumpTop* cdtptr,char* input_name,FILE** input, FILE** output, int64_t inSize, int64_t* outSize) 
+void cdBlock_ThreadedEncode_FF(CoreDumpTop* cdtptr,char* input_name,char* output_name ,FILE** input, FILE** output, int64_t inSize, int64_t* outSize) 
 {
 	struct dataThreadEncode* param=malloc(sizeof(struct dataThreadEncode));
 	param->cdtptr = cdtptr;
-	param->input = *input;
-	param->output = *output;
 	param->inSize = inSize;
 	param->outSize = outSize;
-	param->input_name = input_name;
-	printf("Thread de compression lancé\n");
+	param->input_name = malloc(strlen(input_name)+1);
+	strcpy(param->input_name, input_name);
+	param->output_name = output_name;
+	fclose(*input);
+	fclose(*output);
 	#ifdef _WIN32
 		CreateThread(NULL, NULL, ThreadProc_Encode, param, NULL,NULL);
 	#else
 		#error "Pthread pas implémente"
 	#endif
 	//on prend le controle des fichier
+
 	*input = NULL;
 	*output = NULL;
 
@@ -158,17 +173,20 @@ void cdBlock_addChildBlockFile_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_
 	{
 		cdHeader_SetCompressed(dst_cdptr);
 
-		fclose(*node_fst);
-		char* temp_node_name = malloc(strlen(nodeFileName) + 10);
-		strcpy(temp_node_name, nodeFileName);
-		strcat(temp_node_name, ".backup");
-		remove(temp_node_name);
-		rename(nodeFileName, temp_node_name);
+		fclose(*node_fst);//flush everything
+		char* enc_node_name = malloc(strlen(nodeFileName) + 10);
+		strcpy(enc_node_name, nodeFileName);
+		strcat(enc_node_name, ".encode");
+		remove(enc_node_name);
+		//rename(nodeFileName, temp_node_name); rename only after it finished
 		FILE* temp_node;
-		fopen_s(&temp_node, temp_node_name, "rb");
-		fopen_s(node_fst, nodeFileName, "wb");//safe open=> node_fst is a ptr to FILE*
+		fopen_s(node_fst, nodeFileName, "rb");
+		fopen_s(&temp_node, enc_node_name, "wb");//safe open=> node_fst is a ptr to FILE*
 		if (!*node_fst) {
 			fprintf(stderr, "error opening %s: %s", nodeFileName, strerror(errno));
+		}
+		if (!temp_node) {
+			fprintf(stderr, "error opening %s: %s", enc_node_name, strerror(errno));
 		}
 		//_fseeki64(0, temp_node,SEEK_SET);
 		int64_t  size;
@@ -177,23 +195,22 @@ void cdBlock_addChildBlockFile_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_
 		timespec_get(&before, TIME_UTC);
 		#ifndef USE_THREADED_ENCODE
 			printf("Compression en cours \n");
-			cdtptr->Encode_FF(temp_node, *node_fst, src_cdptr->totalSize, &size);
+			cdtptr->Encode_FF(*node_fst, temp_node, src_cdptr->totalSize, &size);
 			timespec_get(&after, TIME_UTC);
 			printf("Compression de %llu a %llu en %s\n", src_cdptr->totalSize, size,get_time_diff(string_buff,before,after));
 		#else
-			cdBlock_ThreadedEncode_FF(cdtptr, temp_node_name, &temp_node, node_fst, src_cdptr->totalSize, &size);
+			cdBlock_ThreadedEncode_FF(cdtptr, nodeFileName,enc_node_name, node_fst, &temp_node, src_cdptr->totalSize, &size);
 		#endif
 		int64_t  start_pos = dst_cdptr->startPosition + dst_cdptr->totalSize;
 
 		cdHeader_addBlockSize(dst_cdptr, start_pos, strlen(nodeFileName) + 1, cdHeader_FrameInBlock(src_cdptr), src_cdptr->firstFrame);
 		#ifndef USE_THREADED_ENCODE
-			fclose(temp_node);
-			remove(temp_node_name);
-			free(temp_node_name);
-		#endif	
-		//addBlockSize(start_pos, compress_size, b.FrameInBlock, b.FirstFrame);//la taille à changé puisqu'on encode
-		printf("arbre (d=%i) contenant les frames %lli à  %lli encodé à la position : %lli réduit de %lli à %lli du fichier %s\n", depth, src_cdptr->firstFrame,src_cdptr->lastFrame ,src_cdptr->lastAddedBlockPos, src_cdptr->totalSize, size,nodeFileName);
-	//Console.WriteLine("arbre (d=" + Depth + ") contenant les frames " + b.FirstFrame + " à " + b.LastFrame + " encodé à la position :" + LastAddedBlockPos.ToString() + "réduit de " + b.TotalSize + " à " + compress_size);
+			fclose(node_fst);
+			remove(nodeFileName);
+			rename(enc_node_name, nodeFileName);
+			free(enc_node_name);
+		#endif	//on ne free rien sinon puisque l'on donne le controle au thread de compression
+		printf("arbre (d=%i) contenant les frames %lli à  %lli encodé à la position : %lli réduit de %lli à %lli du fichier %s\n", depth, src_cdptr->firstFrame, src_cdptr->lastFrame, src_cdptr->lastAddedBlockPos, src_cdptr->totalSize, size, nodeFileName);
 
 	}
 	else
@@ -274,7 +291,7 @@ void cdBlock_addChildBlock_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_cdpt
 			}
 			fread(block_buff, 1, size - i, fst);
 			fwrite(block_buff, 1, size - i, childcopy);
-			printf("size childcopy=%lli\n", _ftelli64(childcopy));
+			printf("size childcopy=%lli => size=%lli \n", _ftelli64(childcopy),size);
 			//copy chidcopy->fst
 			_fseeki64(fst, dst_pos, SEEK_SET);
 			_fseeki64(childcopy, 0, SEEK_SET);
@@ -285,6 +302,8 @@ void cdBlock_addChildBlock_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_cdpt
 			}
 			fread(block_buff, 1, size -i, childcopy);
 			fwrite(block_buff, 1, size - i, fst);
+			fflush(fst);
+			fclose(childcopy);
 			printf("copie d'un bloc en %lli de taille %lli fin en %lli \n", dst_pos, size,_ftelli64(fst));
 			//cdHeader_BlockMarker_F(fst);//marker de début de block
 			cdHeader_addBlockSize(dst_cdptr, dst_pos, src_cdptr->totalSize, cdHeader_FrameInBlock(src_cdptr), src_cdptr->firstFrame);
@@ -520,6 +539,7 @@ int cdBlock_addFrameLeaf_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst,
 		}
 		int64_t marker_pos = _ftelli64(fst);
 		cdHeader_BlockMarker_F(fst);//marker de fin de block
+		fflush(fst);
 		printf("frame copie a la position : %lli et marker en : %lli copie de %lli\n", sp, marker_pos, size);
 		cdHeader_addBlockSize(cdbptr->header_ptr, sp, size + 1, 1, -1);
 	}
@@ -611,13 +631,17 @@ int cdBlock_addFrame_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst, cha
 void cdBlock_FinishTree_F(CoreDumpBlock* cdbptr,CoreDumpTop* cdtptr,FILE* fst)
 {
 	if (cdbptr->child != NULL) {
-		cdBlock_FinishTree_F(cdbptr->child, cdtptr, fst);
+		
 		if (cdHeader_isExternFile(cdbptr->header_ptr)) {
+			cdBlock_FinishTree_F(cdbptr->child, cdtptr, cdbptr->nodeFile);
 			cdBlock_addChildBlockFile_F(cdbptr->child->header_ptr, cdbptr->header_ptr, cdtptr, &cdbptr->nodeFile, cdbptr->nodeFileName, cdbptr->depth, &cdbptr->blockCount, 0);
-			fclose(cdbptr->nodeFile);
+			if(cdbptr->nodeFile!=NULL)fclose(cdbptr->nodeFile);
 			cdbptr->nodeFile = NULL;
+			if (cdbptr->nodeFileName != NULL)free(cdbptr->nodeFileName);
+			cdbptr->nodeFileName = NULL;
 		}
 		else {
+			cdBlock_FinishTree_F(cdbptr->child, cdtptr, fst);
 			cdBlock_addChildBlock_F(cdbptr->child->header_ptr, cdbptr->header_ptr, cdtptr,  fst, cdbptr->depth, &cdbptr->blockCount, 0);
 		}
 	}
