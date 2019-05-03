@@ -93,6 +93,17 @@ void cdBlock_DeleteBlock(CoreDumpBlock* cdbptr) {
 	if(cdbptr->nodeFile!=NULL)fclose(cdbptr->nodeFile);
 	free(cdbptr);
 }
+void cdBlock_propagateImportant(CoreDumpBlock* cdbptr) {
+	if (cdbptr->child) {
+		if (cdHeader_isImportant(cdbptr->child->header_ptr)) {
+			cdHeader_setImportant(cdbptr->header_ptr);
+		}
+	}
+}
+
+
+
+
 //--------------------------------------------
 //--threaded Encode
 //--------------------------------------------
@@ -463,8 +474,10 @@ int cdBlock_addFrame_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst,FILE
 {
 	if (cdHeader_isExternFile(cdbptr->header_ptr) || cdTop_SeparateFileNeeded(cdtptr,cdbptr->depth)) {
 		cdHeader_SetExternFile(cdbptr->header_ptr);
+		int v=cdBlock_addFrameTreeFile_F(cdbptr, cdtptr, fst, frame);
+		cdBlock_propagateImportant(cdbptr);
 		cdHeader_UpdateHeader(cdbptr->header_ptr, fst);
-		return cdBlock_addFrameTreeFile_F(cdbptr, cdtptr, fst, frame);
+		return v;
 	}
 	else {
 		if (cdHeader_isBaseBlock(cdbptr->header_ptr))
@@ -473,7 +486,10 @@ int cdBlock_addFrame_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst,FILE
 		}
 		else
 		{
-			return cdBlock_addFrameTree_F(cdbptr, cdtptr, fst, frame);
+			int v = cdBlock_addFrameTree_F(cdbptr, cdtptr, fst, frame);
+			cdBlock_propagateImportant(cdbptr);
+			cdHeader_UpdateHeader(cdbptr->header_ptr, fst);
+			return v;
 		}
 	}
 }
@@ -609,7 +625,10 @@ int cdBlock_addFrame_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst, cha
 	if (cdHeader_isExternFile(cdbptr->header_ptr) || cdTop_SeparateFileNeeded(cdtptr, cdbptr->depth)) {
 		cdHeader_SetExternFile(cdbptr->header_ptr);
 		cdHeader_UpdateHeader(cdbptr->header_ptr, fst);
-		return cdBlock_addFrameTreeFile_P(cdbptr, cdtptr, fst, frame,frame_size);
+		int v = cdBlock_addFrameTreeFile_P(cdbptr, cdtptr, fst, frame,frame_size);
+		cdBlock_propagateImportant(cdbptr);
+		
+		return v;
 	}
 	else {
 		if (cdHeader_isBaseBlock(cdbptr->header_ptr))
@@ -618,7 +637,11 @@ int cdBlock_addFrame_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst, cha
 		}
 		else
 		{
-			return cdBlock_addFrameTree_P(cdbptr, cdtptr, fst, frame,frame_size);
+			
+			int v = cdBlock_addFrameTree_P(cdbptr, cdtptr, fst, frame,frame_size);
+			cdBlock_propagateImportant(cdbptr);
+			cdHeader_UpdateHeader(cdbptr->header_ptr, fst);
+			return v;
 		}
 	}
 }

@@ -139,7 +139,7 @@ namespace CoreDumper
 
         public Stream RetrieveFrame(long f, Stream st,long outputSize,bool DirectAcces=false)
         {
-            Console.WriteLine("bloc fini :" +isFinished()+" et block feuille:"+isBaseBlock());
+            Console.WriteLine("bloc fini :" +isFinished()+" et block feuille:"+isBaseBlock()+" et important="+IsImportant());
             long pred = PredictFramePosition(f, st);
             if(predFramePerBlock>0) Console.WriteLine("frame prédite :" + (f / predFramePerBlock)* predFramePerBlock + " : Pos=" + pred +"(entre "+ FirstFrame+"et"+LastFrame +")");
             else Console.WriteLine("frame prédite :erreur" + " : Pos=" + pred + "(entre " + FirstFrame + "et" + LastFrame + ")");
@@ -175,16 +175,36 @@ namespace CoreDumper
                         }
                         else if (IsCompressed())//Le fichier est compressé
                         {
-                            Stopwatch sw=new Stopwatch();
-                            sw.Start();
+                            
                             Console.WriteLine("Niveau intermédiare compréssé");
                             MemoryStream temp_st_2 = new MemoryStream();
-                            Top.Decode(temp_st, temp_st_2, -1, -1);
+                            MemoryStream temp_st_copy=new MemoryStream();
+
+                            long p = temp_st_copy.Position;
+                            temp_st.CopyTo(temp_st_copy);
+                             temp_st.Position=p;
+                            temp_st_copy.Position = p;
+
+
+                            try
+                            {
+                                Stopwatch sw = new Stopwatch();
+                                sw.Start();
+                                Top.Decode(temp_st, temp_st_2, -1, -1);
+                                temp_st_2.Seek(0, SeekOrigin.Begin);
+                                sw.Stop();
+                                Console.WriteLine("deccodage en:" + sw.Elapsed);
+                            }
+                            catch(Exception e)
+                            {
+                                Console.WriteLine("erreur:"+e.Message+" => on suppose qu'il n'as pas été fini");
+                                 temp_st_copy.CopyTo(temp_st_2);
+                                temp_st_2.Position = p;
+                            }
                             //on déccode le block
-                            BlockType temp = new BlockType(top, 0, 0);
-                            temp_st_2.Seek(0, SeekOrigin.Begin);
-                            sw.Stop();
-                            Console.WriteLine("deccodage en:" + sw.Elapsed);
+                           
+
+                            BlockType temp = new BlockType(top, temp_st_2.Position, 0);
                             temp.ReadHeader(temp_st_2);//on lis le header de depuis le stream qui à été décompréssé
                             return temp.RetrieveFrame(f, temp_st_2, outputSize, DirectAcces);
                         }

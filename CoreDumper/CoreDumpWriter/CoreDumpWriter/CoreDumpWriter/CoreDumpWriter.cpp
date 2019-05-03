@@ -11,6 +11,9 @@ extern "C" {
 #include "CoreDumpImpl.h"
 #include "CoreDumpUtils.h"
 }
+#define TEST_FRAME_COUNT 600000
+
+
 int main_test_frame_asF()
 {
 	CoreDumpFile* test = cd_CreateFile((char*)"test.set");
@@ -32,11 +35,13 @@ void alter_frame(char* frame, int64_t size,float proba_change) {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_real_distribution<float> dis_proba(0., 1.);
-	std::uniform_int_distribution<uint64_t> dis_int(0X00, -1);
+	std::uniform_int_distribution<unsigned short> dis_int(0X00, -1);
 	for (int64_t i = 0; i < size/8; i+=1) {
 		if (dis_proba(gen) < proba_change) {
-			((int64_t*)frame)[i] = dis_int(gen);
-			printf("alteration:ll%i\n",i);
+			short a= dis_int(gen);
+			printf("alteration:%lli %hhu=>%hhu\n", i,frame[i],a);
+			frame[i] = a;
+			
 			i += 10000;
 		}
 	}
@@ -69,7 +74,7 @@ int main()
 	struct timespec t1,t2;
 	int64_t sum_ns = 0;
 	int64_t sum_s = 0;
-	for (int i = 0; i < 10000; i++) {
+	for (int i = 0; i < TEST_FRAME_COUNT; i++) {
 		
 		timespec_get(&t1, TIME_UTC);
 
@@ -80,8 +85,8 @@ int main()
 		sum_ns += (t2.tv_nsec - t1.tv_nsec);
 		sum_s += (t2.tv_sec - t1.tv_sec);
 	}
-	double med_ns = sum_ns / 60000;
-	double med_s = sum_s / 60000;
+	double med_ns = sum_ns / TEST_FRAME_COUNT;
+	double med_s = sum_s / TEST_FRAME_COUNT;
 	printf("moyenne des résultat");
 	printf("s=%f , ns=%f\n", med_s, med_ns);
 	cd_CloseFile(test);

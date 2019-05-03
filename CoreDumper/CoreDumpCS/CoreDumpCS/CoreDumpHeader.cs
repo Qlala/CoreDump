@@ -19,7 +19,7 @@ namespace CoreDumper
         Int64 lastAddedBlockPos;//par rapport à start Posotion
         Int64 firstFrameOfLastBlock;
         protected byte configuration = 0;
-        public enum config_flags : byte { COMPRESSED = 0x1, FINISHED = 0x2, BASE = 0x4,NO_PRED=0x8,EXTERN_FILE=0x10 };
+        public enum config_flags : byte { COMPRESSED = 0x1, FINISHED = 0x2, BASE = 0x4,NO_PRED=0x8,EXTERN_FILE=0x10 ,IMPORTANT=0x80};
         //EXTERN_FILE => the block only contains file string (BLOCK MARK maybe subituted with \0 )
         //
         //Header
@@ -56,6 +56,11 @@ namespace CoreDumper
         public bool IsCompressed()
         {
             return (configuration & (byte)config_flags.COMPRESSED) > 0;
+        }
+
+        public bool IsImportant()
+        {
+            return (configuration & (byte)config_flags.IMPORTANT) > 0;
         }
 
         public bool isBaseBlock()

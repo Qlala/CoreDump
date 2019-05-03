@@ -30,7 +30,7 @@ char* cdSepFile_gen(int depth,int nb,void* x) {
 	cdSepFile_createDirectory(file_name_without_ext);
 
 	char* sep_file_name_form = malloc(2*strlen(file_name) + 30);
-	size_t len = 2 * strlen(file_name) + 30 + ceil(log((*count)));
+	size_t len = 2 * strlen(file_name) + 30 + ceil(log10((*count)));
 	char* sep_file_name = malloc(len);
 	sep_file_name_form[0] = '\0';
 	strcat(sep_file_name_form, file_name_without_ext);

@@ -38,6 +38,13 @@ int cdHeader_isExternFile(coreDumpHeader* cdptr)
 {
 	return ((cdptr->configuration) & EXTERN_FILE) > 0;
 }
+void cdHeader_setImportant(CoreDumpHeader* cdptr) {
+	cdptr->configuration |= IMPORTANT;
+}
+
+int cdHeader_isImportant(CoreDumpHeader* cdptr) {
+	return cdptr->configuration&IMPORTANT;
+}
 
 void cdHeader_SetCompressed(coreDumpHeader* cdptr)
 {

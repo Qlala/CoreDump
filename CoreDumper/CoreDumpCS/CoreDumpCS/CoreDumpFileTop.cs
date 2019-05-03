@@ -311,6 +311,7 @@ namespace CoreDumper
         }
 
     }
+
     class CoreDumpDeltaWriter<T,U> : CoreDumpWriter<T, U> where T:ICode,IAddFrame where U:ICode
     {
         static long DELTA_TH=50000;
@@ -319,9 +320,9 @@ namespace CoreDumper
         long reference_id = -1;
         long last_added_frame = -1;
 
-        Stream fastDecode_keptframe;
-        long fastDecode_keptframe_id=-1;
-        long fastDecode_keptframe_pos = -1;
+        Dictionary<long, Stream> fastDecode_keptFrame=new Dictionary<long, Stream>();
+        //Stream fastDecode_keptframe;
+        Dictionary<long, long> fastDecode_keptFrame_pos=new Dictionary<long, long>();
         public Stream ComputeDelta(Stream st,long f) {
 
 
@@ -366,18 +367,23 @@ namespace CoreDumper
         void KeepFrame(Stream kept_frame,long f)
         {
             Console.WriteLine("Sauvegarde de la frame:" + f);
-            fastDecode_keptframe_pos = kept_frame.Position;
+            fastDecode_keptFrame.Add(f,kept_frame);
+            fastDecode_keptFrame_pos.Add(f, kept_frame.Position);
+            KeyValuePair<long, Stream>  f_to_remove =fastDecode_keptFrame.First<KeyValuePair<long, Stream>>();
+            fastDecode_keptFrame.Remove(f_to_remove.Key);
+            fastDecode_keptFrame_pos.Remove(f_to_remove.Key);
+            /*fastDecode_keptframe_pos = kept_frame.Position;
             fastDecode_keptframe = kept_frame;
-            fastDecode_keptframe_id = f;
+            fastDecode_keptframe_id = f;*/
         }
 
         Stream SearchOriginalFrame(long f,int outputsize)
         {
-            if (f == fastDecode_keptframe_id)
+            if (fastDecode_keptFrame.ContainsKey(f))
             {
                 Console.WriteLine("fast deccord frame:" +f);
-                fastDecode_keptframe.Seek(fastDecode_keptframe_pos, SeekOrigin.Begin);
-                return fastDecode_keptframe;
+                fastDecode_keptFrame[f].Seek(fastDecode_keptFrame_pos[f], SeekOrigin.Begin);
+                return fastDecode_keptFrame[f];
             }
             else
             {

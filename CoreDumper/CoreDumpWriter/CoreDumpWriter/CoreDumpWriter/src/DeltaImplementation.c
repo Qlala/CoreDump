@@ -75,6 +75,7 @@ int cdDelta_per_frame_operation_P(FILE* fst,CoreDumpHeader* cdhptr, CoreDumpTop*
 	printf("delta per frame op P updated \n");
 	if (refs->reference == NULL) {
 		printf("making reference\n");
+		cdHeader_setImportant(cdhptr);//setting important
 		fputc(0, fst);//pas delta
 		cdDelta_MakeReference_P(cdtptr, frame, insize, refs->frame_count);
 		cdDelta_CountFrame(cdtptr);

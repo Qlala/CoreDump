@@ -84,7 +84,13 @@ namespace ConsoleApp1
         {
             if (Addr_TextBox.Text!="")
             {
-                Addr_TrackBar.Value = Int32.Parse(Addr_TextBox.Text);
+                try
+                {
+                    Addr_TrackBar.Value = Int32.Parse(Addr_TextBox.Text);
+                }catch(Exception ex)
+                {
+                    Console.WriteLine("erreur addr textbox");
+                }
             }
             if(AutoUpdate_Check.Checked)UpdateData();
         }

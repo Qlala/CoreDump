@@ -50,6 +50,10 @@ int cdHeader_isBaseBlock(coreDumpHeader * cdptr);
 
 int cdHeader_isExternFile(coreDumpHeader * cdptr);
 
+void cdHeader_setImportant(CoreDumpHeader * cdptr);
+
+int cdHeader_isImportant(CoreDumpHeader * cdptr);
+
 void cdHeader_SetCompressed(coreDumpHeader * cdptr);
 
 void cdHeader_SetExternFile(coreDumpHeader * cdptr);

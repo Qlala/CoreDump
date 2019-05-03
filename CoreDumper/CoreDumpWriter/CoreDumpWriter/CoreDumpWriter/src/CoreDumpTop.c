@@ -75,7 +75,8 @@ int cdTop_MoveFile(char* src,char*dst) {
 	DeleteFileA(dst);
 	MoveFileA(src, dst);
 #else
-#error "Version unistd pas faite"
+	remove(dst);
+	rename(src, dst);
 #endif // _WIN32
 
 
