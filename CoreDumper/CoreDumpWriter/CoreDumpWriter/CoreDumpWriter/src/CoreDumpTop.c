@@ -55,8 +55,18 @@ void cdTop_WaitSema(CoreDumpTop* cdtptr)
 #else
 #error "Pthread"
 #endif // _WIN32
-
-
+}
+int cdTop_TryWaitSema(CoreDumpTop* cdtptr)
+{
+#ifdef _WIN32
+	int result;
+		WaitForSingleObject(cdtptr->protection_Mutex, INFINITE);
+		result=cdtptr->semaphore <= 0;
+	ReleaseMutex(cdtptr->protection_Mutex);
+	return result;
+#else
+#error "Pthread"
+#endif // _WIN32
 }
 
 CoreDumpFile* cdTop_CreateNewDumpFile(CoreDumpTop* cdtptr, char* filename) 
@@ -125,6 +135,7 @@ void cdTop_rebaseTree(CoreDumpFile* cdfptr) {
 		cdHeader_UpdateHeader(temp->header_ptr, cdfptr->file);
 		cdBlock_WriteFileName_F(temp, cdfptr->file);//on écris le nom du fichier de l'abre d'avant dans le nouvelle arbre
 		cdBlock_addChildBlockFile_F(cdfptr->tree->header_ptr, temp->header_ptr, cdfptr->top, &temp->nodeFile, temp->nodeFileName, temp->depth, &temp->blockCount, 0);//on ajoute effectivement l'ancienne arbre(possiblement encode)
+		cdHeader_UpdateHeader(temp->header_ptr, cdfptr->file);
 		cdBlock_DeleteBlock(cdfptr->tree);
 		cdfptr->tree = temp;//temp est le nouvelle arbre(branche)
 		if(cdfptr->tree->nodeFile!=NULL)fclose(cdfptr->tree->nodeFile);
@@ -134,12 +145,37 @@ void cdTop_rebaseTree(CoreDumpFile* cdfptr) {
 		cdfptr->tree->child = cdBlock_CreateNewChild_F(cdfptr->file,cdfptr->tree->header_ptr->lastFrame, cdfptr->tree->depth - 1, 0);//temp n'as pas de child car créer en mode no write
 	}
 	else{//pas de fichier séparé
+#ifdef TEST
+
+
 		cdBlock_addChildBlock_F(cdfptr->tree->header_ptr, temp->header_ptr, cdfptr->top, cdfptr->file, temp->depth, &temp->blockCount, 1);
 		cdHeader_UpdateHeader(temp->header_ptr, cdfptr->file);
 		//cdHeader_BlockEnd(temp->header_ptr);
 		cdBlock_DeleteBlock(cdfptr->tree);
 		cdfptr->tree = temp;
+#else//plus de zone critique
+		char * tempfilename = malloc(strlen(cdfptr->fileName) + 20);
+		tempfilename[0] = '\0';
+		strcat(tempfilename, cdfptr->fileName);
+		strcat(tempfilename, ".temp");
+		FILE * tempfile = fopen(tempfilename, "wb");
+		cdHeader_UpdateHeader(temp->header_ptr, tempfile);
+		cdBlock_addChildBlockCopy_F(cdfptr->tree->header_ptr, temp->header_ptr, cdfptr->top, cdfptr->file, tempfile, temp->depth, &temp->blockCount);
+		int64_t end_pos = _ftelli64(tempfile);
+		cdHeader_UpdateHeader(temp->header_ptr, tempfile);
+		//cdHeader_BlockEnd(temp->header_ptr);
+		cdBlock_DeleteBlock(cdfptr->tree);
+		cdfptr->tree = temp;
 		
+		fclose(tempfile);
+		fclose(cdfptr->file);
+		remove(cdfptr->fileName);
+		rename(tempfilename, cdfptr->fileName);
+		cdfptr->file = fopen(cdfptr->fileName, "wb+");
+		_fseeki64(cdfptr->file, end_pos, SEEK_SET);
+		free(tempfilename);
+#endif // 1
+
 		cdfptr->tree->child = cdBlock_CreateNewChild_F(cdfptr->file, cdfptr->tree->header_ptr->lastFrame, cdfptr->tree->depth - 1, 0);//temp n'as pas de child car créer en mode no write
 	}
 	printf("arbre rebase\n");

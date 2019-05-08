@@ -76,6 +76,7 @@ namespace CoreDumper
                 if (isExternFile())
                 {
                     long end_pos = SearchBlockEnd(st);
+                    
                     st.Seek(pred, SeekOrigin.Begin);
                     int size = (int)(end_pos - pred);
                     byte[] buff = new byte[size];

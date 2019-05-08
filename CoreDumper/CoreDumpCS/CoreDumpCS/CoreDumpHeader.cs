@@ -246,7 +246,7 @@ namespace CoreDumper
             {
                 b = (byte)st.ReadByte();
                 i++;
-            } while (b != MARK_CHAR && i < predBlockSize+1 && st.Position < st.Length);//on trouve le caractère de départ ou on dépasse la taille d'un bloc 
+            } while (b != MARK_CHAR && (i < predBlockSize+1 ||predBlockSize==0) && st.Position < st.Length);//on trouve le caractère de départ ou on dépasse la taille d'un bloc 
             long end_pos = st.Position-1;
             st.Seek(last_pos, SeekOrigin.Begin);
             return end_pos;

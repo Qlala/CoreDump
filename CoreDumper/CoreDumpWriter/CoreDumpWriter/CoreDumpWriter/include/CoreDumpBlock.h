@@ -20,3 +20,5 @@ void cdBlock_addChildBlock_F(coreDumpHeader * src_cdptr, coreDumpHeader * dst_cd
 void cdBlock_WriteFileName_F(CoreDumpBlock * cdbptr, FILE * fst);
 
 void cdBlock_addChildBlockFile_F(coreDumpHeader * src_cdptr, coreDumpHeader * dst_cdptr, CoreDumpTop * cdtptr, FILE ** node_fst, char * nodeFileName, int depth, int * blockCount, int force_copy);
+
+void cdBlock_addChildBlockCopy_F(coreDumpHeader * src_cdptr, coreDumpHeader * dst_cdptr, CoreDumpTop * cdtptr, FILE * src_fst, FILE * dst_fst, int depth, int * blockCount);

@@ -44,6 +44,10 @@ CoreDumpBlock* cdBlock_CreateLeaf_F(FILE* fst, int64_t  first_frame,int no_write
 CoreDumpBlock* cdBlock_CreateTree_F(FILE* fst,int64_t  first_frame,int depth_a,int no_write)
 {
 	CoreDumpBlock* cdb = (CoreDumpBlock*)malloc(sizeof(CoreDumpBlock));
+	//Chechking malloc succes
+	if (cdb == NULL) {
+		printf("malloc failure\n");
+	}
 	cdb->blockCount = 0;
 	cdb->header_ptr = cdHeader_Create(_ftelli64(fst));
 	cdb->header_ptr->firstFrame = first_frame;
@@ -71,6 +75,9 @@ void cdBlock_CreateNewChildFile_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FI
 	fopen_s(&cdbptr->nodeFile, cdbptr->nodeFileName, "wb+");
 	//Console.WriteLine("nouveau fichier crée :" + CurrentNodeFileName);
 	printf("nouveau fichier creer : %s\n", cdbptr->nodeFileName);
+	if (!cdbptr->nodeFile) {
+		printf("error création de fichier \n");
+	}
 	//on inscris dans le fst le nom du fichier
 	_fseeki64(cdbptr->nodeFile, 0, SEEK_SET);
 	cdBlock_WriteFileName_F(cdbptr, fst);
@@ -114,11 +121,13 @@ struct dataThreadEncode
 	int64_t* outSize;
 	char* input_name;
 	char * output_name;
+	HANDLE* hThread;
 };
 #ifdef _WIN32
 DWORD WINAPI ThreadProc_Encode(LPVOID lpParameter) {
 	struct dataThreadEncode* param = lpParameter;
-	printf("Thread de compression lancé de %s vers %s\n", param->input_name, param->output_name);
+	HANDLE hThread = *(param->hThread);
+	//printf("Thread de compression lancé de %s vers %s\n", param->input_name, param->output_name);
 	cdTop_IncSema(param->cdtptr);
 	FILE * input = fopen(param->input_name, "rb");
 	FILE * output = fopen(param->output_name, "wb");
@@ -138,7 +147,9 @@ DWORD WINAPI ThreadProc_Encode(LPVOID lpParameter) {
 	}while (rename(param->output_name, param->input_name) != 0);
 	free(param->output_name);
 	free(param->input_name);
+	free(param->hThread);
 	free(param);
+	CloseHandle(hThread);
 	return 0;
 }
 #endif // _WIN32
@@ -155,10 +166,12 @@ void cdBlock_ThreadedEncode_FF(CoreDumpTop* cdtptr,char* input_name,char* output
 	param->input_name = malloc(strlen(input_name)+1);
 	strcpy(param->input_name, input_name);
 	param->output_name = output_name;
+	param->hThread = malloc(sizeof(HANDLE));
 	fclose(*input);
 	fclose(*output);
+	printf("Thread de compression lancé de %s vers %s\n", param->input_name, param->output_name);
 	#ifdef _WIN32
-		CreateThread(NULL, NULL, ThreadProc_Encode, param, NULL,NULL);
+		*(param->hThread)=CreateThread(NULL, NULL, ThreadProc_Encode, param, NULL,NULL);
 	#else
 		#error "Pthread pas implémente"
 	#endif
@@ -175,10 +188,6 @@ void cdBlock_ThreadedEncode_FF(CoreDumpTop* cdtptr,char* input_name,char* output
 //---------------------------------------------------
 void cdBlock_addChildBlockFile_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_cdptr, CoreDumpTop* cdtptr, FILE** node_fst, char* nodeFileName, int depth, int* blockCount, int force_copy)//F correspond au fait que fst soit un fichier
 {
-	/*if (!CurrentNodeFile.CanWrite)
-	{
-		CreateNewChildFile();
-	}*/
 	// /!\ fst have to exist => fait attentioon
 	if (cdTop_EncodingNeeded(cdtptr, depth) || cdHeader_IsCompressed(dst_cdptr))//on doit encoder ?
 	{
@@ -227,23 +236,63 @@ void cdBlock_addChildBlockFile_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_
 	else
 	{
 		//le block est déja dans le fichier
-		//FileSource.Seek(StartPosition + TotalSize, SeekOrigin.Begin);//on se met la ou on doit ajouter le block encodé
 		int64_t  start_pos = dst_cdptr->startPosition + dst_cdptr->totalSize;
-
-		//FileSource.Write(Encoding.ASCII.GetBytes(CurrentNodeFileName), 0, CurrentNodeFileName.Length);//ce n'est pas les nom des fichier qui sont encodé mais  le ficgier (mais ça c'est déja fait)
-		//BlockMarker(FileSource);
-
-		//int64_t  compress_size = (FileSource.Position - start_pos);
 		cdHeader_addBlockSize(dst_cdptr, start_pos, strlen(nodeFileName) + 1, cdHeader_FrameInBlock(src_cdptr), src_cdptr->firstFrame);
-		//addBlockSize(start_pos, compress_size, b.FrameInBlock, b.FirstFrame);//la taille à changé puisqu'on encode 
-
-		//Console.WriteLine("arbre (d=" + Depth + ") contenant " + b.FirstFrame + " à " + b.LastFrame + "  laissé à la position :" + LastAddedBlockPos.ToString() + "de taille" + b.TotalSize);
 
 
 
 	}
 	*blockCount++;//on a un block de plus
 }
+
+//DST doit être différent de SRC
+void cdBlock_addChildBlockCopy_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_cdptr, CoreDumpTop* cdtptr, FILE* src_fst, FILE* dst_fst, int depth, int* blockCount) {
+	if (cdTop_EncodingNeeded(cdtptr, depth) || cdHeader_IsCompressed(dst_cdptr))//on doit encoder ?
+	{
+		cdHeader_SetCompressed(dst_cdptr);
+
+		cdHeader_goStartIndex_F(src_cdptr, src_fst);
+		int64_t  start_pos = _ftelli64(src_fst);
+#ifdef NO_TEMP_FILE
+#else
+		int64_t  size;
+		_fseeki64(dst_fst, dst_cdptr->startPosition + dst_cdptr->totalSize, SEEK_SET);//on se met la ou on doit ajouter le block encodé
+		cdtptr->Encode_FF(src_fst, dst_fst, src_cdptr->totalSize, &size);//on encode directement au bonne endroit
+		cdHeader_BlockMarker_F(dst_fst);
+		cdHeader_addBlockSize(dst_cdptr, start_pos, size + 1, cdHeader_FrameInBlock(src_cdptr), src_cdptr->firstFrame);//la taille à changé puisqu'on encode 
+#endif // NO_TEMP_FILE
+	}
+	else
+	{
+			cdHeader_goStartIndex_F(src_cdptr, src_fst);//b.GoStartIndex(bl_st);
+#ifdef NO_TEMP_FILE
+#error "uniquement un mode avec ficihier"
+
+#else
+			int64_t  size = src_cdptr->totalSize;
+			//int64_t  src_pos = src_cdptr->startPosition;
+			int64_t  dst_pos = dst_cdptr->startPosition + dst_cdptr->totalSize;
+			_fseeki64(dst_fst, dst_pos, SEEK_SET);
+			int i;
+			//copy fst->childcopy
+			for (i = 0; i < (size - BLOCK_BUFF_SIZE); i += BLOCK_BUFF_SIZE) {
+				fread(block_buff, 1, BLOCK_BUFF_SIZE, src_fst);
+				fwrite(block_buff, 1, BLOCK_BUFF_SIZE, dst_fst);
+			}
+			fread(block_buff, 1, size - i, src_fst);
+			fwrite(block_buff, 1, size - i, dst_fst);
+			
+			fflush(dst_fst);
+			printf("copie d'un bloc en %lli de taille %lli fin en %lli \n", dst_pos, size, _ftelli64(dst_fst));
+			//cdHeader_BlockMarker_F(fst);// pas marker de début de block
+			cdHeader_addBlockSize(dst_cdptr, dst_pos, src_cdptr->totalSize, cdHeader_FrameInBlock(src_cdptr), src_cdptr->firstFrame);
+#endif
+	}
+	(*blockCount)++;//on a un block de plus
+
+}
+
+
 void cdBlock_addChildBlock_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_cdptr, CoreDumpTop* cdtptr, FILE* fst, int depth, int* blockCount, int force_copy)
 {
 	if (cdTop_EncodingNeeded(cdtptr,depth) || cdHeader_IsCompressed(dst_cdptr))//on doit encoder ?
@@ -272,11 +321,8 @@ void cdBlock_addChildBlock_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_cdpt
 		fclose(compress_c);
 		cdHeader_BlockMarker_F(fst);
 		cdHeader_addBlockSize(dst_cdptr, start_pos, size + 1, cdHeader_FrameInBlock(src_cdptr), src_cdptr->firstFrame);//la taille à changé puisqu'on encode 
-		//Console.WriteLine("arbre (d=" + Depth + ") contenant les frames " + b.FirstFrame + " à " + b.LastFrame + " encodé à la position :" + LastAddedBlockPos.ToString() + "réduit de " + b.TotalSize + " à " + compress_size);
-
+		
 #endif // NO_TEMP_FILE
-
-
 	}
 	else
 	{
@@ -316,7 +362,7 @@ void cdBlock_addChildBlock_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_cdpt
 			fflush(fst);
 			fclose(childcopy);
 			printf("copie d'un bloc en %lli de taille %lli fin en %lli \n", dst_pos, size,_ftelli64(fst));
-			//cdHeader_BlockMarker_F(fst);//marker de début de block
+			//cdHeader_BlockMarker_F(fst);// pas marker de début de block
 			cdHeader_addBlockSize(dst_cdptr, dst_pos, src_cdptr->totalSize, cdHeader_FrameInBlock(src_cdptr), src_cdptr->firstFrame);
 #endif
 		}
@@ -328,7 +374,6 @@ void cdBlock_addChildBlock_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_cdpt
 			//cdHeader_BlockMarker_F(fst);
 
 			printf("arbre (d=%i) contenant les frames %lli à  %lli laissé à la position : %lli de taile %lli\n", depth, src_cdptr->firstFrame,src_cdptr->lastFrame, dst_cdptr->lastAddedBlockPos, src_cdptr->totalSize);
-			//Console.WriteLine("arbre (d=" + Depth + ") contenant " + b.FirstFrame + " à " + b.LastFrame + "  laissé à la position :" + LastAddedBlockPos.ToString() + "de taille" + b.TotalSize);
 		}
 
 

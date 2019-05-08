@@ -18,6 +18,8 @@ typedef int(*Decode_FP_fun_T)(FILE* input, char** output, int64_t  in_l, int64_t
 typedef int(*Encode_PP_fun_T)(char* input, char** output, int64_t  in_l, int64_t * out_l);
 typedef int(*Decode_PP_fun_T)(char* input, char** output, int64_t  in_l, int64_t * out_l);
 
+int cdTop_TryWaitSema(CoreDumpTop * cdtptr);
+
 CoreDumpFile * cdTop_CreateNewDumpFile(CoreDumpTop * cdtptr, char * filename);
 
 void cdTop_IncSema(CoreDumpTop* cdtptr);

@@ -25,7 +25,8 @@ int ImplMyDelta_code_P(
 		*outSize += 1;//on écris le caractère
 		fputc('P', OutFile);//provided
 		int64_t tocopy = (i + BufSize) > InSize ? InSize - i : BufSize;//attention à la fin de bloc
-		*outSize += fwrite(InFile+i,tocopy  , 1, OutFile);//copy du bloc qui n'est pas conservé
+		*outSize += tocopy;
+		fwrite(InFile+i,tocopy  , 1, OutFile);//copy du bloc qui n'est pas conservé
 		i+=tocopy;
 	fin_boucle:
 		;
@@ -73,7 +74,7 @@ int cdDelta_per_frame_operation_P(FILE* fst,CoreDumpHeader* cdhptr, CoreDumpTop*
 	
 	int64_t insize = *size;
 	printf("delta per frame op P updated \n");
-	if (refs->reference == NULL) {
+	if (refs->reference == NULL || ((int64_t)refs->frame_count - (int64_t)refs->ref_frame_n)!=(int32_t)(refs->frame_count - refs->ref_frame_n)){
 		printf("making reference\n");
 		cdHeader_setImportant(cdhptr);//setting important
 		fputc(0, fst);//pas delta
@@ -89,7 +90,7 @@ int cdDelta_per_frame_operation_P(FILE* fst,CoreDumpHeader* cdhptr, CoreDumpTop*
 		int64_t sp=_ftelli64(fst);
 		fputc(1, fst);//delta
 		int32_t ref_f = refs->frame_count - refs->ref_frame_n ;
-		*size += fwrite(&(ref_f),sizeof(int32_t),1,fst);
+		*size += fwrite(&(ref_f),1, sizeof(int32_t),fst);
 		struct timespec t1, t2;
 		timespec_get(&t1, TIME_UTC);
 		//ImplDelta_code_P(1, frame, insize, refs->reference, refs->ref_size, fst, size,1024);
@@ -99,7 +100,10 @@ int cdDelta_per_frame_operation_P(FILE* fst,CoreDumpHeader* cdhptr, CoreDumpTop*
 		//Size doit être changé  pour corresspondre à la taille écrite.
 		cdDelta_CountFrame(cdtptr);
 		int64_t lp = _ftelli64(fst);
-		*size = lp - sp;//taille exact (TODO => pas triché)
+		if (*size != lp - sp) {
+			printf("calcul triché => size=%lli != %lli\n",*size, lp - sp);
+			*size = lp - sp;//taille exact (TODO => pas triché)
+		}
 		if ((*size) > insize*DELTA_THRESHOLD) {//seuil passé
 			//discarding reference
 			if (refs->reference != NULL)free(refs->reference);
@@ -126,8 +130,8 @@ void cdDelta_SetImpl(CoreDumpTop* cdtptr) {
 }
 
 void cdDelta_CleanTop(CoreDumpTop * cdtptr) {
-	cdtptr->per_frame_operation_F ;
-	cdtptr->per_frame_operation_P ;
+	cdtptr->per_frame_operation_F ;//remettre a zero
+	cdtptr->per_frame_operation_P;
 	struct DeltaRefSave* refs = (cdtptr->par_frame_operationParam);
 	refs->ref_frame_n = 0;
 	refs->frame_count = 0;
