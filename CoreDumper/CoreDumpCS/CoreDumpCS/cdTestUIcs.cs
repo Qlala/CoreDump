@@ -65,11 +65,13 @@ namespace ConsoleApp1
         private void Addr_Scroll(object sender, EventArgs e)
         {
             Addr_TextBox.Text =Addr_TrackBar.Value.ToString();
-            if(AutoUpdate_Check.Checked)UpdateData();
+            Addr_TextBox.Update();
+            if (AutoUpdate_Check.Checked)UpdateData();
         }
         private void Frame_Scroll(object sender, EventArgs e)
         {
             Frame_TextBox.Text= Frame_TrackBar.Value.ToString();
+            Frame_TextBox.Update();
             if(AutoUpdate_Check.Checked)UpdateData();
         }
         private void Frame_Type(object sender, EventArgs e)

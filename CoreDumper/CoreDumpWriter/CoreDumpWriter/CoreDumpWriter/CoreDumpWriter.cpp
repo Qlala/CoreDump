@@ -14,7 +14,7 @@ extern "C" {
 #include "CoreDumpUtils.h"
 #include "CoreDumpTop.h"
 }
-#define TEST_FRAME_COUNT 1000
+#define TEST_FRAME_COUNT 60000
 
 
 int main_test_frame_asF()

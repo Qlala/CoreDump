@@ -93,12 +93,13 @@ CoreDumpBlock* cdBlock_CreateNewChild_F(FILE* fst, int64_t  first_frame, int dep
 		return cdBlock_CreateLeaf_F(fst, first_frame,no_write);
 	}
 }
-void cdBlock_DeleteBlock(CoreDumpBlock* cdbptr) {
-	if (cdbptr->child != NULL)cdBlock_DeleteBlock(cdbptr->child);
-	cdHeader_Delete(cdbptr->header_ptr);
-	if(cdbptr->nodeFileName!=NULL)free(cdbptr->nodeFileName);
-	if(cdbptr->nodeFile!=NULL)fclose(cdbptr->nodeFile);
-	free(cdbptr);
+void cdBlock_DeleteBlock(CoreDumpBlock** cdbptr) {
+	if ((*cdbptr)->child != NULL)cdBlock_DeleteBlock(&(*cdbptr)->child);
+	cdHeader_Delete((*cdbptr)->header_ptr);
+	if((*cdbptr)->nodeFileName!=NULL)free((*cdbptr)->nodeFileName);
+	if((*cdbptr)->nodeFile!=NULL)fclose((*cdbptr)->nodeFile);
+	free(*cdbptr);
+	*cdbptr = NULL;
 }
 void cdBlock_propagateImportant(CoreDumpBlock* cdbptr) {
 	if (cdbptr->child) {
@@ -270,11 +271,12 @@ void cdBlock_addChildBlockCopy_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_
 
 #else
 			int64_t  size = src_cdptr->totalSize;
-			//int64_t  src_pos = src_cdptr->startPosition;
+			int64_t src_pos = _ftelli64(src_fst);
 			int64_t  dst_pos = dst_cdptr->startPosition + dst_cdptr->totalSize;
 			_fseeki64(dst_fst, dst_pos, SEEK_SET);
 			int i;
-			//copy fst->childcopy
+			fflush(src_fst);
+			//copy src_fst->dst_fst
 			for (i = 0; i < (size - BLOCK_BUFF_SIZE); i += BLOCK_BUFF_SIZE) {
 				fread(block_buff, 1, BLOCK_BUFF_SIZE, src_fst);
 				fwrite(block_buff, 1, BLOCK_BUFF_SIZE, dst_fst);
@@ -391,7 +393,7 @@ int cdBlock_addFrameTree_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE* fst
 		if (cdHeader_PredictHit_F(cdbptr->header_ptr, fst) && !cdTop_MaxBlockCountReach(cdtptr,cdbptr->depth, cdbptr->blockCount)) {//pas de problème on peut faire une nouvelle branche
 			printf("on continue l'abre de niveau d=%i", cdbptr->depth);
 
-			cdBlock_DeleteBlock(cdbptr->child);
+			cdBlock_DeleteBlock(&cdbptr->child);
 			cdbptr->child = cdBlock_CreateNewChild_F(fst, cdbptr->header_ptr->lastFrame, cdbptr->depth - 1,0);//CreateNewChild(FileSource);
 
 			cdHeader_UpdateHeader(cdbptr->header_ptr, fst);
@@ -488,7 +490,7 @@ int cdBlock_addFrameTreeFile_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*
 		{
 
 			cdBlock_CreateNewChildFile_F(cdbptr, cdtptr, fst);
-			cdBlock_DeleteBlock(cdbptr->child);
+			cdBlock_DeleteBlock(&cdbptr->child);
 			cdbptr->child = cdBlock_CreateNewChild_F(cdbptr->nodeFile, cdbptr->header_ptr->lastFrame, cdbptr->depth - 1,0);//CreateNewChild(FileSource);
 			cdHeader_UpdateHeader(cdbptr->header_ptr, fst);
 			return 0;
@@ -547,7 +549,7 @@ int cdBlock_addFrameTree_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE* fst
 
 		cdBlock_addChildBlock_F(cdbptr->child->header_ptr, cdbptr->header_ptr, cdtptr, fst, cdbptr->depth, &cdbptr->blockCount, 0);
 		if (cdHeader_PredictHit_F(cdbptr->header_ptr, fst) && !cdTop_MaxBlockCountReach(cdtptr, cdbptr->depth, cdbptr->blockCount)) {//pas de problème on peut faire une nouvelle branche
-			cdBlock_DeleteBlock(cdbptr->child);
+			cdBlock_DeleteBlock(&cdbptr->child);
 			cdbptr->child = cdBlock_CreateNewChild_F(fst, cdbptr->header_ptr->lastFrame, cdbptr->depth - 1, 0);//CreateNewChild(FileSource);
 			printf("on continue l'abre de niveau d=%i\n", cdbptr->depth);
 			cdHeader_UpdateHeader(cdbptr->header_ptr, fst);
@@ -627,7 +629,7 @@ int cdBlock_addFrameTreeFile_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*
 		cdBlock_CreateNewChildFile_F(cdbptr, cdtptr, fst);
 		
 		CoreDumpBlock* temp = cdBlock_CreateNewChild_F(cdbptr->nodeFile, cdbptr->child->header_ptr->firstFrame, cdbptr->depth - 1, 0);
-		cdBlock_DeleteBlock(cdbptr->child);
+		cdBlock_DeleteBlock(&cdbptr->child);
 		cdbptr->child = temp;
 		cdHeader_UpdateHeader(cdbptr->child->header_ptr,cdbptr->nodeFile);
 	}
@@ -637,7 +639,7 @@ int cdBlock_addFrameTreeFile_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*
 		{
 
 			cdBlock_CreateNewChildFile_F(cdbptr, cdtptr, fst);
-			cdBlock_DeleteBlock(cdbptr->child);
+			cdBlock_DeleteBlock(&cdbptr->child);
 			cdbptr->child = cdBlock_CreateNewChild_F(cdbptr->nodeFile, cdbptr->header_ptr->lastFrame, cdbptr->depth - 1, 0);//CreateNewChild(FileSource);
 			cdHeader_UpdateHeader(cdbptr->header_ptr, fst);
 			return 0;

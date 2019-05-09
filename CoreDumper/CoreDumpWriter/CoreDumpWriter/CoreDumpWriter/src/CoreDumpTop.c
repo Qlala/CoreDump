@@ -103,7 +103,7 @@ void cdTop_CloseDumpFile(CoreDumpFile* cdfptr) {
 	cdTop_WaitSema(cdfptr->top);
 	fclose(cdfptr->file);
 	free(cdfptr->fileName);
-	cdBlock_DeleteBlock(cdfptr->tree);
+	cdBlock_DeleteBlock(&cdfptr->tree);
 	//free(cdfptr->top);
 }
 int cdTop_EncodingNeeded(CoreDumpTop* cdtptr, int depth) {
@@ -136,7 +136,7 @@ void cdTop_rebaseTree(CoreDumpFile* cdfptr) {
 		cdBlock_WriteFileName_F(temp, cdfptr->file);//on écris le nom du fichier de l'abre d'avant dans le nouvelle arbre
 		cdBlock_addChildBlockFile_F(cdfptr->tree->header_ptr, temp->header_ptr, cdfptr->top, &temp->nodeFile, temp->nodeFileName, temp->depth, &temp->blockCount, 0);//on ajoute effectivement l'ancienne arbre(possiblement encode)
 		cdHeader_UpdateHeader(temp->header_ptr, cdfptr->file);
-		cdBlock_DeleteBlock(cdfptr->tree);
+		cdBlock_DeleteBlock(&cdfptr->tree);
 		cdfptr->tree = temp;//temp est le nouvelle arbre(branche)
 		if(cdfptr->tree->nodeFile!=NULL)fclose(cdfptr->tree->nodeFile);
 		cdfptr->tree->nodeFile = NULL;
@@ -158,20 +158,19 @@ void cdTop_rebaseTree(CoreDumpFile* cdfptr) {
 		tempfilename[0] = '\0';
 		strcat(tempfilename, cdfptr->fileName);
 		strcat(tempfilename, ".temp");
-		FILE * tempfile = fopen(tempfilename, "wb");
-		cdHeader_UpdateHeader(temp->header_ptr, tempfile);
+		FILE * tempfile = fopen(tempfilename, "wb+");
 		cdBlock_addChildBlockCopy_F(cdfptr->tree->header_ptr, temp->header_ptr, cdfptr->top, cdfptr->file, tempfile, temp->depth, &temp->blockCount);
 		int64_t end_pos = _ftelli64(tempfile);
 		cdHeader_UpdateHeader(temp->header_ptr, tempfile);
 		//cdHeader_BlockEnd(temp->header_ptr);
-		cdBlock_DeleteBlock(cdfptr->tree);
+		cdBlock_DeleteBlock(&cdfptr->tree);
 		cdfptr->tree = temp;
-		
+		fflush(tempfile);
 		fclose(tempfile);
 		fclose(cdfptr->file);
 		remove(cdfptr->fileName);
 		rename(tempfilename, cdfptr->fileName);
-		cdfptr->file = fopen(cdfptr->fileName, "wb+");
+		cdfptr->file = fopen(cdfptr->fileName, "rb+");
 		_fseeki64(cdfptr->file, end_pos, SEEK_SET);
 		free(tempfilename);
 #endif // 1

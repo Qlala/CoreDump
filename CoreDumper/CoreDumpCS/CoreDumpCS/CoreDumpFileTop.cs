@@ -369,9 +369,13 @@ namespace CoreDumper
             Console.WriteLine("Sauvegarde de la frame:" + f);
             fastDecode_keptFrame.Add(f,kept_frame);
             fastDecode_keptFrame_pos.Add(f, kept_frame.Position);
-            KeyValuePair<long, Stream>  f_to_remove =fastDecode_keptFrame.First<KeyValuePair<long, Stream>>();
-            fastDecode_keptFrame.Remove(f_to_remove.Key);
-            fastDecode_keptFrame_pos.Remove(f_to_remove.Key);
+            if (fastDecode_keptFrame.Count > 3)
+            {
+                KeyValuePair<long, Stream> f_to_remove = fastDecode_keptFrame.First<KeyValuePair<long, Stream>>();
+                fastDecode_keptFrame.Remove(f_to_remove.Key);
+                fastDecode_keptFrame_pos.Remove(f_to_remove.Key);
+                Console.WriteLine("remove key=" + f_to_remove.Key);
+            }
             /*fastDecode_keptframe_pos = kept_frame.Position;
             fastDecode_keptframe = kept_frame;
             fastDecode_keptframe_id = f;*/

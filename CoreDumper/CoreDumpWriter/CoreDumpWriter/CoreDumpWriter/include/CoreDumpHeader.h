@@ -31,6 +31,7 @@ struct coreDumpHeader_S {
    //not in the header => deduce by file start position
 
    //les prédiction et les POS se repère par rapport au début du fichier et non par rapport à start pos
+	//non stocké dans le header
 	int64_t startPosition;//avant le header;
 	int64_t lastAddedBlockSize;
 };
@@ -83,3 +84,5 @@ void cdHeader_addBlockSize(coreDumpHeader * cdptr, int64_t  Pos, int64_t  size, 
 int64_t  cdHeader_BlockEnd(coreDumpHeader * cdptr);
 
 void cdHeader_BlockMarker_F(FILE * fst);
+
+void cdHeader_printInfo(coreDumpHeader * cdptr);

@@ -72,6 +72,8 @@ void cdHeader_TerminateBlock(coreDumpHeader* cdptr, FILE* fst)
 void cdHeader_UpdateHeader(coreDumpHeader* cdptr, FILE* fst)//ne chnage pas la position dans le stream
 {
 	int64_t  c_pos = _ftelli64(fst);
+	//printf("mise a jour du Header\n");
+	//cdHeader_printInfo(cdptr);
 	cdHeader_goStartIndex_F(cdptr, fst);
 	cdHeader_WriteHeader_F(cdptr, fst);
 	_fseeki64(fst, c_pos, SEEK_SET);
@@ -314,4 +316,20 @@ int64_t  cdHeader_BlockEnd(coreDumpHeader* cdptr)
 void cdHeader_BlockMarker_F(FILE* fst)
 {
 	fputc(MARK_CHAR, fst);
+}
+
+void cdHeader_printInfo(coreDumpHeader* cdptr) {
+	printf("Core Dump Header info : \n");
+	printf("-headerSize=%lli\n",cdptr->headerSize);
+	printf("-totalSize=%lli\n", cdptr->totalSize);
+	printf("-predBlockSize=%lli\n", cdptr->predBlockSize);
+	printf("-predFramePerBlock=%lli\n", cdptr->predFramePerBlock);
+	printf("-firstFrame=%lli\n", cdptr->firstFrame);
+	printf("-lastFrame=%lli\n", cdptr->lastFrame);
+	printf("-lastAddedBlockPos=%lli\n", cdptr->lastAddedBlockPos);
+	printf("-firsFrameofLastBlock=%lli\n", cdptr->firstFrameOfLastBlock);
+	printf("-configuration=%hhx\n", cdptr->configuration);
+	printf("Non stocke:\n");
+	printf("-startPosition=%lli\n", cdptr->startPosition);
+	printf("-lastAddedBlockSize=%lli\n", cdptr->lastAddedBlockSize);
 }
