@@ -74,7 +74,7 @@ void cdBlock_CreateNewChildFile_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FI
 	remove(cdbptr->nodeFileName);//supression du fichier si il existe déja
 	fopen_s(&cdbptr->nodeFile, cdbptr->nodeFileName, "wb+");
 	//Console.WriteLine("nouveau fichier crée :" + CurrentNodeFileName);
-	printf("nouveau fichier creer : %s\n", cdbptr->nodeFileName);
+	printf_if_verbose("nouveau fichier creer : %s\n", cdbptr->nodeFileName);
 	if (!cdbptr->nodeFile) {
 		printf("error création de fichier \n");
 	}
@@ -84,7 +84,7 @@ void cdBlock_CreateNewChildFile_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FI
 }
 CoreDumpBlock* cdBlock_CreateNewChild_F(FILE* fst, int64_t  first_frame, int depth_a,int no_write)
 {
-	printf("Creation  d'enfant : premiere frame %lli depth=%i en %lli avec no_write=%i\n" , first_frame, depth_a,fst!=NULL? _ftelli64(fst):0,no_write);
+	printf_if_verbose("Creation  d'enfant : premiere frame %lli depth=%i en %lli avec no_write=%i\n" , first_frame, depth_a,fst!=NULL? _ftelli64(fst):0,no_write);
 	if (depth_a > 0) {
 		return cdBlock_CreateTree_F(fst, first_frame, depth_a,no_write);
 	}
@@ -170,7 +170,7 @@ void cdBlock_ThreadedEncode_FF(CoreDumpTop* cdtptr,char* input_name,char* output
 	param->hThread = malloc(sizeof(HANDLE));
 	fclose(*input);
 	fclose(*output);
-	printf("Thread de compression lancé de %s vers %s\n", param->input_name, param->output_name);
+	printf_if_verbose("Thread de compression lancé de %s vers %s\n", param->input_name, param->output_name);
 	#ifdef _WIN32
 		*(param->hThread)=CreateThread(NULL, NULL, ThreadProc_Encode, param, NULL,NULL);
 	#else
@@ -215,10 +215,10 @@ void cdBlock_addChildBlockFile_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_
 		struct timespec before,after;
 		timespec_get(&before, TIME_UTC);
 		#ifndef USE_THREADED_ENCODE
-			printf("Compression en cours \n");
+			printf_if_verbose("Compression en cours \n");
 			cdtptr->Encode_FF(*node_fst, temp_node, src_cdptr->totalSize, &size);
 			timespec_get(&after, TIME_UTC);
-			printf("Compression de %llu a %llu en %s\n", src_cdptr->totalSize, size,get_time_diff(string_buff,before,after));
+			printf_if_verbose("Compression de %llu a %llu en %s\n", src_cdptr->totalSize, size,get_time_diff(string_buff,before,after));
 		#else
 			cdBlock_ThreadedEncode_FF(cdtptr, nodeFileName,enc_node_name, node_fst, &temp_node, src_cdptr->totalSize, &size);
 		#endif
@@ -231,7 +231,7 @@ void cdBlock_addChildBlockFile_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_
 			rename(enc_node_name, nodeFileName);
 			free(enc_node_name);
 		#endif	//on ne free rien sinon puisque l'on donne le controle au thread de compression
-		printf("arbre (d=%i) contenant les frames %lli à  %lli encodé à la position : %lli réduit de %lli à %lli du fichier %s\n", depth, src_cdptr->firstFrame, src_cdptr->lastFrame, src_cdptr->lastAddedBlockPos, src_cdptr->totalSize, size, nodeFileName);
+			printf_if_verbose("arbre (d=%i) contenant les frames %lli à  %lli encodé à la position : %lli réduit de %lli à %lli du fichier %s\n", depth, src_cdptr->firstFrame, src_cdptr->lastFrame, src_cdptr->lastAddedBlockPos, src_cdptr->totalSize, size, nodeFileName);
 
 	}
 	else
@@ -285,7 +285,7 @@ void cdBlock_addChildBlockCopy_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_
 			fwrite(block_buff, 1, size - i, dst_fst);
 			
 			fflush(dst_fst);
-			printf("copie d'un bloc en %lli de taille %lli fin en %lli \n", dst_pos, size, _ftelli64(dst_fst));
+			printf_if_verbose("copie d'un bloc en %lli de taille %lli fin en %lli \n", dst_pos, size, _ftelli64(dst_fst));
 			//cdHeader_BlockMarker_F(fst);// pas marker de début de block
 			cdHeader_addBlockSize(dst_cdptr, dst_pos, src_cdptr->totalSize, cdHeader_FrameInBlock(src_cdptr), src_cdptr->firstFrame);
 #endif
@@ -350,7 +350,7 @@ void cdBlock_addChildBlock_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_cdpt
 			}
 			fread(block_buff, 1, size - i, fst);
 			fwrite(block_buff, 1, size - i, childcopy);
-			printf("size childcopy=%lli => size=%lli \n", _ftelli64(childcopy),size);
+			printf_if_verbose("size childcopy=%lli => size=%lli \n", _ftelli64(childcopy),size);
 			//copy chidcopy->fst
 			_fseeki64(fst, dst_pos, SEEK_SET);
 			_fseeki64(childcopy, 0, SEEK_SET);
@@ -363,7 +363,7 @@ void cdBlock_addChildBlock_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_cdpt
 			fwrite(block_buff, 1, size - i, fst);
 			fflush(fst);
 			fclose(childcopy);
-			printf("copie d'un bloc en %lli de taille %lli fin en %lli \n", dst_pos, size,_ftelli64(fst));
+			printf_if_verbose("copie d'un bloc en %lli de taille %lli fin en %lli \n", dst_pos, size,_ftelli64(fst));
 			//cdHeader_BlockMarker_F(fst);// pas marker de début de block
 			cdHeader_addBlockSize(dst_cdptr, dst_pos, src_cdptr->totalSize, cdHeader_FrameInBlock(src_cdptr), src_cdptr->firstFrame);
 #endif
@@ -375,7 +375,7 @@ void cdBlock_addChildBlock_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_cdpt
 			_fseeki64(fst, src_cdptr->startPosition + src_cdptr->totalSize, SEEK_SET);//on se met à la fin
 			//cdHeader_BlockMarker_F(fst);
 
-			printf("arbre (d=%i) contenant les frames %lli à  %lli laissé à la position : %lli de taile %lli\n", depth, src_cdptr->firstFrame,src_cdptr->lastFrame, dst_cdptr->lastAddedBlockPos, src_cdptr->totalSize);
+			printf_if_verbose("arbre (d=%i) contenant les frames %lli à  %lli laissé à la position : %lli de taile %lli\n", depth, src_cdptr->firstFrame,src_cdptr->lastFrame, dst_cdptr->lastAddedBlockPos, src_cdptr->totalSize);
 		}
 
 
@@ -391,7 +391,7 @@ int cdBlock_addFrameTree_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE* fst
 
 		cdBlock_addChildBlock_F(cdbptr->child->header_ptr, cdbptr->header_ptr, cdtptr, fst, cdbptr->depth, &cdbptr->blockCount,0);
 		if (cdHeader_PredictHit_F(cdbptr->header_ptr, fst) && !cdTop_MaxBlockCountReach(cdtptr,cdbptr->depth, cdbptr->blockCount)) {//pas de problème on peut faire une nouvelle branche
-			printf("on continue l'abre de niveau d=%i", cdbptr->depth);
+			printf_if_verbose("on continue l'abre de niveau d=%i", cdbptr->depth);
 
 			cdBlock_DeleteBlock(&cdbptr->child);
 			cdbptr->child = cdBlock_CreateNewChild_F(fst, cdbptr->header_ptr->lastFrame, cdbptr->depth - 1,0);//CreateNewChild(FileSource);
@@ -404,9 +404,9 @@ int cdBlock_addFrameTree_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE* fst
 			cdHeader_TerminateBlock(cdbptr->header_ptr, fst);
 			if (!cdTop_MaxBlockCountReach(cdtptr, cdbptr->depth, cdbptr->blockCount))
 			{
-				printf("echec predicteur d=%i, on fini avec Totalize= %lli (entre %lli et %lli )\n", cdbptr->depth, cdbptr->header_ptr->totalSize, cdbptr->header_ptr->firstFrame, cdbptr->header_ptr->lastFrame);
+				printf_if_verbose("echec predicteur d=%i, on fini avec Totalize= %lli (entre %lli et %lli )\n", cdbptr->depth, cdbptr->header_ptr->totalSize, cdbptr->header_ptr->firstFrame, cdbptr->header_ptr->lastFrame);
 			}
-			printf("abre terminé \n");
+			printf_if_verbose("abre terminé \n");
 			return 1;//on passe le problème à l'abre au dessus;
 		}
 	}
@@ -438,7 +438,7 @@ int cdBlock_addFrameLeaf_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst,
 			//pas de copie et addBlockSize doit être appelé
 		}
 		else {
-			printf("frame de taille : %lli\n", size);
+			printf_if_verbose("frame de taille : %lli\n", size);
 			//FileSource.Seek(StartPosition + TotalSize, SeekOrigin.Begin);//on se met la ou on doit ajouter le block encodé
 			int i;
 			int read_size = 0;
@@ -456,20 +456,20 @@ int cdBlock_addFrameLeaf_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst,
 
 			cdHeader_BlockMarker_F(fst);//marker de fin de block
 			//addBlockSize(sp, st.Length + 1, 1);
-			printf("frame copie a la position : %lli et marker en : %lli copie de %lli\n", sp, marker_pos, size);
+			printf_if_verbose("frame copie a la position : %lli et marker en : %lli copie de %lli\n", sp, marker_pos, size);
 			cdHeader_addBlockSize(cdbptr->header_ptr, sp, size + 1, 1, -1);
 		}
 	}
 	cdbptr->blockCount++;
 	if(cdHeader_PredictHit_F(cdbptr->header_ptr,fst)&&!cdTop_MaxBlockCountReach(cdtptr,0,cdbptr->blockCount))
 	{
-		printf("On continue à rajouter des block à la feuille \n");
+		printf_if_verbose("On continue à rajouter des block à la feuille \n");
 		cdHeader_UpdateHeader(cdbptr->header_ptr,fst);
 		return 0;//pas de problème
 	}
 	else
 	{
-		printf("On a fini une feuille");
+		printf_if_verbose("On a fini une feuille");
 		cdHeader_TerminateBlock(cdbptr->header_ptr,fst);
 		/*if (!Top.MaxBlockCountReach(0, blockCount))
 		{
@@ -502,9 +502,9 @@ int cdBlock_addFrameTreeFile_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*
 			cdbptr->nodeFile = NULL;
 			if (!cdTop_MaxBlockCountReach(cdtptr, cdbptr->depth, cdbptr->blockCount))
 			{
-				printf("echec predicteur d=%i, on fini avec Totalize= %lli (entre %lli et %lli )\n",cdbptr->depth,cdbptr->header_ptr->totalSize,cdbptr->header_ptr->firstFrame,cdbptr->header_ptr->lastFrame);
+				printf_if_verbose("echec predicteur d=%i, on fini avec Totalize= %lli (entre %lli et %lli )\n",cdbptr->depth,cdbptr->header_ptr->totalSize,cdbptr->header_ptr->firstFrame,cdbptr->header_ptr->lastFrame);
 			}
-			printf("abre terminé \n");
+			printf_if_verbose("abre terminé \n");
 			return 1;//le problème doit remonter à l'arbre au dessus
 		}
 	}
@@ -551,7 +551,7 @@ int cdBlock_addFrameTree_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE* fst
 		if (cdHeader_PredictHit_F(cdbptr->header_ptr, fst) && !cdTop_MaxBlockCountReach(cdtptr, cdbptr->depth, cdbptr->blockCount)) {//pas de problème on peut faire une nouvelle branche
 			cdBlock_DeleteBlock(&cdbptr->child);
 			cdbptr->child = cdBlock_CreateNewChild_F(fst, cdbptr->header_ptr->lastFrame, cdbptr->depth - 1, 0);//CreateNewChild(FileSource);
-			printf("on continue l'abre de niveau d=%i\n", cdbptr->depth);
+			printf_if_verbose("on continue l'abre de niveau d=%i\n", cdbptr->depth);
 			cdHeader_UpdateHeader(cdbptr->header_ptr, fst);
 
 			return 0;
@@ -560,9 +560,9 @@ int cdBlock_addFrameTree_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE* fst
 			cdHeader_TerminateBlock(cdbptr->header_ptr, fst);
 			if (!cdTop_MaxBlockCountReach(cdtptr, cdbptr->depth, cdbptr->blockCount))
 			{
-				printf("echec predicteur d=%i, on fini avec Totalize= %lli (entre %lli et %lli )\n", cdbptr->depth, cdbptr->header_ptr->totalSize, cdbptr->header_ptr->firstFrame, cdbptr->header_ptr->lastFrame);
+				printf_if_verbose("echec predicteur d=%i, on fini avec Totalize= %lli (entre %lli et %lli )\n", cdbptr->depth, cdbptr->header_ptr->totalSize, cdbptr->header_ptr->firstFrame, cdbptr->header_ptr->lastFrame);
 			}
-			printf("abre terminé \n");
+			printf_if_verbose("abre terminé \n");
 			return 1;//on passe le problème à l'abre au dessus;
 		}
 	}
@@ -589,7 +589,7 @@ int cdBlock_addFrameLeaf_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst,
 		}
 		else {//fonctionement classsique
 			
-			printf("frame de taille : %lli\n", frame_size);
+			printf_if_verbose("frame de taille : %lli\n", frame_size);
 			//FileSource.Seek(StartPosition + TotalSize, SeekOrigin.Begin);//on se met la ou on doit ajouter le block encodé
 			
 			fwrite(frame, 1,frame_size, fst);
@@ -603,7 +603,7 @@ int cdBlock_addFrameLeaf_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst,
 		int64_t marker_pos = _ftelli64(fst);
 		cdHeader_BlockMarker_F(fst);//marker de fin de block
 		fflush(fst);
-		printf("frame copie a la position : %lli et marker en : %lli copie de %lli\n", sp, marker_pos, size);
+		printf_if_verbose("frame copie a la position : %lli et marker en : %lli copie de %lli\n", sp, marker_pos, size);
 		cdHeader_addBlockSize(cdbptr->header_ptr, sp, size + 1, 1, -1);
 	}
 	cdbptr->blockCount++;
@@ -651,9 +651,9 @@ int cdBlock_addFrameTreeFile_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*
 			cdbptr->nodeFile = NULL;
 			if (!cdTop_MaxBlockCountReach(cdtptr, cdbptr->depth, cdbptr->blockCount))
 			{
-				printf("echec predicteur d=%i, on fini avec Totalize= %lli (entre %lli et %lli )\n", cdbptr->depth, cdbptr->header_ptr->totalSize, cdbptr->header_ptr->firstFrame, cdbptr->header_ptr->lastFrame);
+				printf_if_verbose("echec predicteur d=%i, on fini avec Totalize= %lli (entre %lli et %lli )\n", cdbptr->depth, cdbptr->header_ptr->totalSize, cdbptr->header_ptr->firstFrame, cdbptr->header_ptr->lastFrame);
 			}
-			printf("abre terminé \n");
+			printf_if_verbose("abre terminé \n");
 			return 1;//le problème doit remonter à l'arbre au dessus
 		}
 	}

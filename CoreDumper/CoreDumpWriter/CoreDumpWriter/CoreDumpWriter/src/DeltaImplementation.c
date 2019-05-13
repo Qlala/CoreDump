@@ -13,8 +13,8 @@ int ImplMyDelta_code_P(
 	for (int64_t i = 0;i<InSize; ) {
 		//comp dans buffsize;
 		int64_t j;
-		for(j=0;j<BufSize-8 && j+i<InSize-8;j+=8)//scan à la recherche de différence (méthode efficace)
-			if(*(int64_t*)(InFile+i+j)!=*(int64_t*)(SrcFile + i + j)) goto diff_found;
+		for(j=0;j<BufSize-sizeof(TYPE_FOR_DELTA_SCAN) && j+i<InSize- sizeof(TYPE_FOR_DELTA_SCAN);j+= sizeof(TYPE_FOR_DELTA_SCAN))//scan à la recherche de différence (méthode efficace)
+			if(*(TYPE_FOR_DELTA_SCAN*)(InFile+i+j)!=*(TYPE_FOR_DELTA_SCAN*)(SrcFile + i + j)) goto diff_found;
 		for (; j < BufSize && j+i<InSize; j ++)//scan pour les élément pas multiple de 8
 			if (*(InFile + i + j) != *(SrcFile + i + j)) goto diff_found;
 		*outSize += 1;
@@ -34,9 +34,6 @@ int ImplMyDelta_code_P(
 
 }
 
-
-
-
 struct DeltaRefSave {
 	int64_t frame_count;
 	char* reference;
@@ -47,8 +44,6 @@ void cdDelta_CountFrame(CoreDumpTop* cdtptr) {
 	struct DeltaRefSave* refs = cdtptr->par_frame_operationParam;
 	refs->frame_count++;
 }
-
-
 void cdDelta_MakeReference_P(CoreDumpTop* cdtptr, char* frame, int64_t frame_size,int64_t frame_number) {
 	struct DeltaRefSave* refs = (cdtptr->par_frame_operationParam);
 	if (refs->reference != NULL)free(refs->reference);
@@ -57,7 +52,6 @@ void cdDelta_MakeReference_P(CoreDumpTop* cdtptr, char* frame, int64_t frame_siz
 	refs->ref_frame_n = frame_number;
 	memcpy(refs->reference, frame, refs->ref_size);
 }
-
 //TODO
 int cdDelta_per_frame_operation_F(FILE*fst,CoreDumpHeader* cdhptr, CoreDumpTop* cdtptr, FILE* frame, int64_t* size) {
 	printf("delta per frame op F \n");
@@ -73,9 +67,9 @@ int cdDelta_per_frame_operation_P(FILE* fst,CoreDumpHeader* cdhptr, CoreDumpTop*
 	struct DeltaRefSave* refs = (cdtptr->par_frame_operationParam);
 	
 	int64_t insize = *size;
-	printf("delta per frame op P updated \n");
+	printf_if_verbose("delta per frame op P updated \n");
 	if (refs->reference == NULL || ((int64_t)refs->frame_count - (int64_t)refs->ref_frame_n)!=(int32_t)(refs->frame_count - refs->ref_frame_n)){
-		printf("making reference\n");
+		printf_if_verbose("making reference\n");
 		cdHeader_setImportant(cdhptr);//setting important
 		fputc(0, fst);//pas delta
 		cdDelta_MakeReference_P(cdtptr, frame, insize, refs->frame_count);
@@ -96,24 +90,24 @@ int cdDelta_per_frame_operation_P(FILE* fst,CoreDumpHeader* cdhptr, CoreDumpTop*
 		//ImplDelta_code_P(1, frame, insize, refs->reference, refs->ref_size, fst, size,1024);
 		ImplMyDelta_code_P( frame, insize, refs->reference, fst, size, DELTA_WINDOW);
 		timespec_get(&t2, TIME_UTC);
-		printf("delta calcule, de taile %lli , %s\n",*size,get_time_diff(buff_delt,t1,t2));
+		printf_if_verbose("delta calcule, de taile %lli , %s\n",*size,get_time_diff(buff_delt,t1,t2));
 		//Size doit être changé  pour corresspondre à la taille écrite.
 		cdDelta_CountFrame(cdtptr);
 		int64_t lp = _ftelli64(fst);
 		if (*size != lp - sp) {
-			printf("calcul triché => size=%lli != %lli\n",*size, lp - sp);
+			printf_if_verbose("calcul triché => size=%lli != %lli\n",*size, lp - sp);
 			*size = lp - sp;//taille exact (TODO => pas triché)
 		}
 		if ((*size) > insize*DELTA_THRESHOLD) {//seuil passé
 			//discarding reference
 			if (refs->reference != NULL)free(refs->reference);
 			refs->reference = NULL;
-			printf("seuil delta atteint avec %lli avec la frame %lli\n", *size, refs->frame_count);
+			printf_if_verbose("seuil delta atteint avec %lli avec la frame %lli\n", *size, refs->frame_count);
 			refs->ref_frame_n = 0;
 		}
 		else {
-			printf("toujours sous le seuil avec size=%lli seuil atteint a %3.2f %%  pour la frame %lli\n", *size,(*size/(insize*DELTA_THRESHOLD))*100.f, refs->frame_count);
-			printf("*****ref actuel : %lli******\n", refs->ref_frame_n);
+			printf_if_verbose("toujours sous le seuil avec size=%lli seuil atteint a %3.2f %%  pour la frame %lli\n", *size,(*size/(insize*DELTA_THRESHOLD))*100.f, refs->frame_count);
+			printf_if_verbose("*****ref actuel : %lli******\n", refs->ref_frame_n);
 		}
 		return 1;
 	}

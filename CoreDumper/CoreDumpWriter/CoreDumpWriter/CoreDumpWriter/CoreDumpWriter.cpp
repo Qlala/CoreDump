@@ -14,7 +14,22 @@ extern "C" {
 #include "CoreDumpUtils.h"
 #include "CoreDumpTop.h"
 }
-#define TEST_FRAME_COUNT 60000
+#define TEST_FRAME_COUNT 1000
+void generate_test_frame(const char* filename,size_t frame_size ,double proba_sortie_de_serie) {
+	FILE* myfile = fopen(filename, "wb");
+	//std::random_device rd;
+	std::minstd_rand0 gen(clock());
+	std::uniform_real_distribution<float> dis_proba(0., 1.);
+	std::uniform_int_distribution<unsigned short> dis_int(0X00, 0XFF);
+	char ser = dis_int(gen);
+	for (size_t i = 0; i < frame_size; i++) {
+		if (dis_proba(gen) < proba_sortie_de_serie) {
+			ser = dis_int(gen);
+		}
+		fwrite(&ser, 1, 1, myfile);
+	}
+	fclose(myfile);
+}
 
 
 int main_test_frame_asF()
@@ -94,20 +109,19 @@ void push_time_csv(const char* file_name, int64_t n,int64_t t_ns, int64_t t_s,in
 int main()
 {
 	char string_buff[100];
-	/*
-	CoreDumpTop* top = cdTop_BlankImplementation();
 
-	CoreDumpFile* test = cdTop_CreateNewDumpFile(top, (char*)"test.set");
-	
-	cdSepFile_SetTop(test, 1);
-	cdDef_Enc_SetTop_func(top);
-	*/
 	//freopen("log.txt", "w+", stdout);
-	remove("result.csv");
+	remove("../result/result.csv");
 	std::experimental::filesystem::remove_all("test/");
+	FILE* test_frame = fopen("test_frame_ref_forced", "rb");
+	if (!test_frame) {
+		generate_test_frame("test_frame_ref_forced", 128*1024*1024,0.05);
+		test_frame = fopen("test_frame_ref_forced", "rb");
+	}
+	//creation du filchier
 	CoreDumpFile* test = cd_CreateFile((char*)"test.set");
 
-	FILE* test_frame = fopen("test_frame_ref_forced", "rb");
+
 	fseek(test_frame, 0, SEEK_END);
 	int64_t frame_size=ftell(test_frame);
 	fseek(test_frame, 0, SEEK_SET);
@@ -125,7 +139,9 @@ int main()
 		
 		timespec_get(&t1, TIME_UTC);
 
+		//methode pour ajouter un cycle
 		cd_addFrame_P(test, frame_buff,frame_size);
+
 		timespec_get(&t2, TIME_UTC);
 		std::cout << "frame " << i << " en " << get_time_diff(string_buff, t1, t2) << std::endl;
 		alter_frame(frame_buff, frame_size, 0.000001);
@@ -134,7 +150,7 @@ int main()
 			curr_size = computeSizeOfDir("test/");
 			curr_size += std::experimental::filesystem::file_size("test.set");
 		}
-		push_time_csv("result.csv", i, t2.tv_nsec - t1.tv_nsec, t2.tv_sec - t1.tv_sec,frame_size,curr_size);
+		push_time_csv("../result/result.csv", i, t2.tv_nsec - t1.tv_nsec, t2.tv_sec - t1.tv_sec,frame_size,curr_size);
 		sum_ns += (t2.tv_nsec - t1.tv_nsec);
 		sum_s += (t2.tv_sec - t1.tv_sec);
 	}
@@ -142,6 +158,7 @@ int main()
 	double med_s = sum_s / i;
 	printf("moyenne des résultat");
 	printf("s=%f , ns=%f\n", med_s, med_ns);
+	//fermeture du fichier
 	cd_CloseFile(test);
 	return 0;
 }

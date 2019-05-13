@@ -11,7 +11,7 @@ using CoreDumper;
 using ICSharpCode.SharpZipLib.Zip.Compression;
 namespace MyCoders
 {
-    class LZMA_Encoder : SevenZip.Compression.LZMA.Encoder, ICode, IAddFrame
+    class LZMA_Encoder : SevenZip.Compression.LZMA.Encoder, ICode
     {
         public LZMA_Encoder() : base()
         {
@@ -23,7 +23,7 @@ namespace MyCoders
             ;//rien
         }
     }
-    class Deflate_Encoder : ICode, IAddFrame
+    class Deflate_Encoder : ICode
     {
         System.IO.Compression.DeflateStream coder;
 
@@ -84,7 +84,7 @@ namespace MyCoders
         }
     }
 
-    class LZMA_Decoder : SevenZip.Compression.LZMA.Decoder, ICode, IAddFrame
+    class LZMA_Decoder : SevenZip.Compression.LZMA.Decoder, ICode
     {
         public void AddFrame(Stream st)
         {

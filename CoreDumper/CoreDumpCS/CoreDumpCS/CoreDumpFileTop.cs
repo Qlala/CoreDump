@@ -26,7 +26,8 @@ namespace CoreDumper
         }
         virtual public bool Encode(Stream input, Stream output, Int64 in_l, Int64 out_l) { return false; }
         virtual public bool Decode(Stream input, Stream output, Int64 in_l, Int64 out_l) { return false; }
-        
+        virtual public bool Named_Decode(String name, Stream input, Stream output, Int64 in_l, Int64 out_l) { return false; }
+
         internal BlockType tree;
         public BlockType CreateNewBlock(int depth, Stream source, long first_frame,bool no_write = false)
         {
@@ -152,16 +153,76 @@ namespace CoreDumper
         void Code(System.IO.Stream inStream, System.IO.Stream outStream,
             Int64 inSize, Int64 outSize, ICodeProgress progress);
     }
-    interface IAddFrame
+
+
+    //version plus simple que le CoreDumpWrite (contient le fastdeccode deccomprssion
+    class CoreDumpOpener<U> : CoreDumpFileTop, IDisposable where U : ICode
     {
-        void AddFrame(Stream st);//avertie le coder qu'une frame a été ajouté (il en fait ce qu'il veut)
+        Dictionary<String, Stream> fastdecode_compression_stream=new Dictionary<string, Stream>();
+        Dictionary<String, long> fastdecode_compression_size=new Dictionary<string, long>();
+        U decoder;
+        String CurrentFileName;
+        public U Decoder { get => decoder; set => decoder = value; }
+
+        override public bool Decode(Stream input, Stream output, Int64 in_l, Int64 out_l)
+        {
+            decoder.Code(input, output, in_l, out_l, null);
+            return true;
+        }
+        override public bool Named_Decode(String name, Stream input, Stream output, Int64 in_l, Int64 out_l)
+        {
+            if (fastdecode_compression_stream.ContainsKey(name))
+            {
+                Console.WriteLine("decodage depuis la sauvegarde");
+                fastdecode_compression_stream[name].Seek(0, SeekOrigin.Begin);
+                fastdecode_compression_stream[name].CopyTo(output);
+                output.Seek(0, SeekOrigin.Begin);
+                out_l =fastdecode_compression_size[name];
+            }
+            else
+            {
+                if (fastdecode_compression_stream.Count > 3)
+                {
+                    KeyValuePair<string, Stream> n_to_remove = fastdecode_compression_stream.First<KeyValuePair<string, Stream>>();
+                    fastdecode_compression_stream.Remove(n_to_remove.Key);
+                    fastdecode_compression_size.Remove(n_to_remove.Key);
+                }
+                Console.WriteLine("sauvegarde du decode=" + name);
+                decoder.Code(input, output, in_l, out_l, null);
+                MemoryStream temp = new MemoryStream();
+                output.Seek(0, SeekOrigin.Begin);
+                output.CopyTo(temp);
+                fastdecode_compression_stream.Add(name, temp);
+                fastdecode_compression_size.Add(name, out_l);
+
+            }
+            
+            return true;
+        }
+
+        public override void AddFrame(Stream st)
+        {
+            Console.WriteLine("AddFrame is Disabled");
+        }
+
+        public void readOnlyOpen(string path)
+        {
+            CurrentFileName = path;
+            Stream fst = new FileStream(path, FileMode.Open, FileAccess.Read);
+            ReadOnlyRestore(fst);
+        }
+
+        public void Dispose()
+        {
+            output.Dispose();
+        }
+        public CoreDumpOpener(U d)
+        {
+            decoder = d;
+        }
     }
 
-
-
-
-
-    class CoreDumpWriter<T,U> : CoreDumpFileTop,IDisposable where T : ICode,IAddFrame where U:ICode
+        class CoreDumpWriter<T,U> : CoreDumpFileTop,IDisposable where T : ICode where U:ICode
 
     {
         T coder;
@@ -237,24 +298,21 @@ namespace CoreDumper
             coder.Code(input,output,in_l,out_l,ph);
             return true;
         }
+
         override public bool Decode(Stream input, Stream output, Int64 in_l, Int64 out_l)
         {
-            //try
-            //{
                 decoder.Code(input, output, in_l, out_l, null);
                 return true;
-            /*}
-            //catch (Exception e)
-            //{
-                throw new Exception();
-                return false;
-            }*/
+        }
+        override public bool Named_Decode(String name,Stream input, Stream output, Int64 in_l, Int64 out_l)
+        {
+            decoder.Code(input, output, in_l, out_l, null);
+            return true;
         }
 
         public override void AddFrame(Stream st)
         {
             base.AddFrame(st);
-            coder.AddFrame(st);//permet au coder a delta de savoir a quelle frame il se réference
         }
 
         public void Open(string path,FileAccess fa)
@@ -312,285 +370,6 @@ namespace CoreDumper
 
     }
 
-    class CoreDumpDeltaWriter<T,U> : CoreDumpWriter<T, U> where T:ICode,IAddFrame where U:ICode
-    {
-        static long DELTA_TH=50000;
-        MemoryStream current_reference=new MemoryStream();
-
-        long reference_id = -1;
-        long last_added_frame = -1;
-
-        Dictionary<long, Stream> fastDecode_keptFrame=new Dictionary<long, Stream>();
-        //Stream fastDecode_keptframe;
-        Dictionary<long, long> fastDecode_keptFrame_pos=new Dictionary<long, long>();
-        public Stream ComputeDelta(Stream st,long f) {
-
-
-            Stopwatch sw = new Stopwatch();
-            st.Seek(0, SeekOrigin.Begin);
-            sw.Start();
-            byte[] in_buff = new byte[st.Length];
-           
-            st.Read(in_buff,0, (int)st.Length);
-            sw.Stop();
-            Console.WriteLine("temps copie entré:" + sw.Elapsed);
-            sw.Reset();
-            sw.Start();
-            byte[] out_buff = Fossil.Delta.Create(current_reference.GetBuffer(), in_buff);
-            sw.Stop();
-            Console.WriteLine("calcul delta =>" + sw.Elapsed);
-            Stream out_st = new MemoryStream();
-            sw.Reset();
-            sw.Start();
-            out_st.WriteByte(1);
-            out_st.Write(BitConverter.GetBytes((int)(f - reference_id)),0,4);
-            out_st.Write(out_buff, 0, out_buff.Length);
-            out_st.Seek(0, SeekOrigin.Begin);
-            sw.Stop();
-            Console.WriteLine("temps copie sortie:" + sw.Elapsed);
-            return out_st;
-        }
-        Stream MakeNewReference(Stream st,long f)
-        {
-            current_reference.Dispose();
-            current_reference = new MemoryStream();
-            st.Seek(0, SeekOrigin.Begin);
-            st.CopyTo(current_reference);
-            reference_id = f;
-            Stream temp = new MemoryStream(1);
-            temp.WriteByte(0);
-            st.Seek(0, SeekOrigin.Begin);
-            st.CopyTo(temp);
-            temp.Seek(0, SeekOrigin.Begin);
-            return temp;
-        }
-        void KeepFrame(Stream kept_frame,long f)
-        {
-            Console.WriteLine("Sauvegarde de la frame:" + f);
-            fastDecode_keptFrame.Add(f,kept_frame);
-            fastDecode_keptFrame_pos.Add(f, kept_frame.Position);
-            if (fastDecode_keptFrame.Count > 3)
-            {
-                KeyValuePair<long, Stream> f_to_remove = fastDecode_keptFrame.First<KeyValuePair<long, Stream>>();
-                fastDecode_keptFrame.Remove(f_to_remove.Key);
-                fastDecode_keptFrame_pos.Remove(f_to_remove.Key);
-                Console.WriteLine("remove key=" + f_to_remove.Key);
-            }
-            /*fastDecode_keptframe_pos = kept_frame.Position;
-            fastDecode_keptframe = kept_frame;
-            fastDecode_keptframe_id = f;*/
-        }
-
-        Stream SearchOriginalFrame(long f,int outputsize)
-        {
-            if (fastDecode_keptFrame.ContainsKey(f))
-            {
-                Console.WriteLine("fast deccord frame:" +f);
-                fastDecode_keptFrame[f].Seek(fastDecode_keptFrame_pos[f], SeekOrigin.Begin);
-                return fastDecode_keptFrame[f];
-            }
-            else
-            {
-                Stream frame=DirectRetriveFrame(f, outputsize);
-                KeepFrame(frame, f);
-                return frame;
-            }
-        }
-
-        public Stream CodeDelta(Stream frame)
-        {
-            last_added_frame++;
-            if (reference_id == -1)
-            {
-                return MakeNewReference(frame, last_added_frame);
-            }
-            else
-            {
-                Stream delta = ComputeDelta(frame,last_added_frame);
-                if (delta.Length > DELTA_TH)
-                {
-                    Console.WriteLine("Delta trop grand :" + delta.Length);
-                    return MakeNewReference(frame, last_added_frame);
-                }
-                else
-                {
-                    
-                    return delta;
-                }
-            }
-            
-        }
-        int DELTA_WINDOW_SIZE =1024;
-        public MemoryStream ApplyDelta(Stream delta,Stream source)
-        {
-            MemoryStream output = new MemoryStream();
-            byte[] buff = new byte[1024];
-            while (delta.Position<delta.Length)
-            {
-                
-                if (delta.ReadByte() == 'C')
-                {
-                    source.Read(buff, 0, DELTA_WINDOW_SIZE);
-                    output.Write(buff, 0, DELTA_WINDOW_SIZE);
-                }
-                else//P
-                {
-                    delta.Read(buff, 0, DELTA_WINDOW_SIZE);
-                    source.Position += DELTA_WINDOW_SIZE;
-                    output.Write(buff, 0, DELTA_WINDOW_SIZE);
-                }
-            }
-            return output;
-        }
-        public byte[] RA_ApplyDelta(long pos,long size,Stream delta, Stream source)
-        {
-            byte[] output = new byte[size];
-            long approx_pos = (pos / DELTA_WINDOW_SIZE)*DELTA_WINDOW_SIZE;
-            long data_copied = 0;
-            long curr_pos=0;
-            byte[] buff = new byte[DELTA_WINDOW_SIZE];
-            while (curr_pos < approx_pos)
-                {
-                    if (delta.ReadByte() == 'C')
-                    {
-                        curr_pos += DELTA_WINDOW_SIZE;
-                    }
-                    else
-                    {
-                        delta.Position += DELTA_WINDOW_SIZE;
-                        curr_pos += DELTA_WINDOW_SIZE;
-                    }
-                }
-            
-            source.Position+=curr_pos;
-            if (curr_pos < pos )
-            {
-               
-                {
-                    if (delta.ReadByte() == 'C')
-                    {
-                        source.Read(buff, 0, DELTA_WINDOW_SIZE);
-                    }
-                    else//P
-                    {
-                        delta.Read(buff, 0, DELTA_WINDOW_SIZE);
-                        source.Position += DELTA_WINDOW_SIZE;
-                    }
-                    buff.Skip((int)(pos - curr_pos)).Take((int)size).ToArray().CopyTo(output, 0);
-                    data_copied += size;
-                }
-
-            }
-
-            while (data_copied+DELTA_WINDOW_SIZE < size)
-            {
-                if (delta.ReadByte() == 'C')
-                {
-                    source.Read(buff, 0, DELTA_WINDOW_SIZE);
-                }
-                else//P
-                {
-                    delta.Read(buff, 0, DELTA_WINDOW_SIZE);
-                    source.Position += DELTA_WINDOW_SIZE;
-                }
-                buff.CopyTo(output,data_copied);
-                data_copied += DELTA_WINDOW_SIZE;
-            }
-            buff = new byte[size - data_copied];
-            if (delta.ReadByte() == 'C')
-            {
-                source.Read(buff, 0, (int)(size-data_copied));
-            }
-            else//P
-            {
-                delta.Read(buff, 0, (int)(size - data_copied));
-            }
-            buff.CopyTo(output, data_copied);
-            return output.ToArray();
-        }
-        public MemoryStream ResolveDelta(Stream st,long f)
-        {
-            byte[] bytes = new byte[4];
-            st.Read(bytes, 0, 4);
-
-
-            int delta_ref_f = BitConverter.ToInt32(bytes, 0);
-            int outputsize=0;
-            Stream ref_frame = SearchOriginalFrame(f-delta_ref_f,outputsize);
-            ref_frame.ReadByte();
-            return ApplyDelta(st,ref_frame);
-
-
-        }
-        public byte[] DA_ResolveDelta(Stream st, long f,long pos,long size)
-        {
-            byte[] bytes = new byte[4];
-            st.Read(bytes, 0, 4);
-
-
-            int delta_ref_f = BitConverter.ToInt32(bytes, 0);
-            int outputsize = 0;
-            Stream ref_frame = SearchOriginalFrame(f - delta_ref_f, outputsize);
-            ref_frame.ReadByte();
-            //return Fossil.Delta.RA_ApplyStream(pos,size,ref_frame, st);
-            return RA_ApplyDelta(pos, size, st,ref_frame);
-
-        }
-
-
-        public override byte[] randomAccesFrame(long f, long pos, long size)
-        {
-            Console.WriteLine("random acces : frame=" + f);
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            int outputsizea = 0;
-            Stream temp = DirectRetriveFrame(f, outputsizea);
-            sw.Stop();
-            Console.WriteLine("temps recuperation delta:" + sw.Elapsed);
-            sw.Reset();
-            //temp.Seek(0, SeekOrigin.Begin);
-            if (temp.ReadByte() == 0)
-            {
-                List<byte> a = new List<byte>();
-                temp.Seek(pos, SeekOrigin.Current);
-                for (int i = 0; i < size; i++) a.Add((byte)temp.ReadByte());
-                return a.ToArray();
-            }
-            else
-            {
-                return DA_ResolveDelta(temp,f,pos,size);
-            }
-        }
-
-        public override Stream RetriveFrame(long f)
-        {
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            Stream temp = base.RetriveFrame(f);
-            sw.Stop();
-            Console.WriteLine("temps recuperation delta:" + sw.Elapsed);
-            sw.Reset();
-            temp.Seek(0, SeekOrigin.Begin);
-            if (temp.ReadByte() == 0)
-            {
-                MemoryStream temp2 = new MemoryStream();
-                temp.CopyTo(temp2);
-                temp.Dispose();
-                temp2.Seek(0, SeekOrigin.Begin);
-                return temp2;
-            }
-            else
-            {
-                return ResolveDelta(temp, f);
-            }
-            
-        }
-
-        public override void AddFrame(Stream st)
-        {
-            base.AddFrame(CodeDelta(st));
-        }
-    }
     
 
 }

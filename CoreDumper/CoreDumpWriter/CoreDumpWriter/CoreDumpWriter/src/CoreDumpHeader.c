@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "CoreDumpConfig.h"
 #include "CoreDumpHeader.h"
-
+#include "CoreDumpUtils.h"
 const char MARK_CHAR = MARK_CHAR_REF;
 
 coreDumpHeader* cdHeader_Create(int64_t start_index) {
@@ -222,13 +222,13 @@ int64_t  cdHeader_PredictFramePosition_F(coreDumpHeader* cdptr, int64_t f, FILE*
 				i++;
 			} while (b != MARK_CHAR && i < cdptr->predBlockSize && !feof(fst));//on trouve le caractère de départ ou on dépasse la taille d'un bloc 
 			if (b != MARK_CHAR) {
-				printf("marqueur pas trouve\n");
+				printf_if_verbose("marqueur pas trouve\n");
 				if (b == EOF) {
-					printf("fin de fichier possiblement atteinte\n");
+					printf_if_verbose("fin de fichier possiblement atteinte\n");
 				}
 			}
 			if (feof(fst)) {
-				printf("fin du fcihier atteint\n");
+				printf_if_verbose("fin du fcihier atteint\n");
 			}
 			
 			//TODO: possiblement erooné ou sur-limité
@@ -255,14 +255,14 @@ int cdHeader_PredictHit_F(coreDumpHeader* cdptr, FILE* fst)
 	int64_t  pred_debut = cdHeader_PredictFramePosition_F(cdptr, cdptr->firstFrameOfLastBlock, fst);//predicition du début
 	if (!(pred_debut == (cdptr->lastAddedBlockPos + cdptr->startPosition) && ((pred_fin == (cdptr->lastAddedBlockPos + cdptr->startPosition) && after_end >= cdptr->totalSize + cdptr->startPosition) || cdptr->predFramePerBlock == 1)))
 	{
-		printf("echec predicteur : \n");
+		printf_if_verbose("echec predicteur : \n");
 	}
 	else {
-		printf("reussite predicteur : \n");
+		printf_if_verbose("reussite predicteur : \n");
 	}
 		int64_t  raw_approx = cdptr->startPosition + cdptr->headerSize + (cdptr->predBlockSize * ((cdptr->firstFrameOfLastBlock - cdptr->firstFrame) / cdptr->predFramePerBlock));
 		//Console.WriteLine("echec de predicteur : r_a=" + raw_approx + " approx_fin=" + approx_fin + " pred=" + pred_debut + " after=" + after_end + "lastblock_pos=" + lastAddedBlockPos + ":real=" + (lastAddedBlockPos + startPosition) + " fFrameofLastBlock=" + firstFrameOfLastBlock + " fperblock=" + predFramePerBlock + "predbsize=" + predBlockSize + " totalsize=" + totalSize + " sp=" + StartPosition);
-		printf("-information predicteur : r_a=%lli approx_fin=%lli pred=%lli pred_fin=%lli after=%lli lastblock_pos=%lli:real=%lli fFrameofLastBlock=%lli fperblock=%lli predbsize=%lli totalsize=%lli sp=%lli \n",raw_approx,approx_fin,pred_debut,pred_fin,after_end,cdptr->lastAddedBlockPos,cdptr->lastAddedBlockPos+cdptr->startPosition,cdptr->firstFrameOfLastBlock,cdptr->predFramePerBlock,cdptr->predBlockSize,cdptr->totalSize, cdptr->startPosition);
+		printf_if_verbose("-information predicteur : r_a=%lli approx_fin=%lli pred=%lli pred_fin=%lli after=%lli lastblock_pos=%lli:real=%lli fFrameofLastBlock=%lli fperblock=%lli predbsize=%lli totalsize=%lli sp=%lli \n",raw_approx,approx_fin,pred_debut,pred_fin,after_end,cdptr->lastAddedBlockPos,cdptr->lastAddedBlockPos+cdptr->startPosition,cdptr->firstFrameOfLastBlock,cdptr->predFramePerBlock,cdptr->predBlockSize,cdptr->totalSize, cdptr->startPosition);
 	//}
 
 	return pred_debut == (cdptr->lastAddedBlockPos + cdptr->startPosition) && ((pred_fin == (cdptr->lastAddedBlockPos + cdptr->startPosition) && after_end >= cdptr->totalSize + cdptr->startPosition) || cdptr->predFramePerBlock == 1);//on verifie qu'on aurra le bon résultat.

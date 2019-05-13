@@ -145,6 +145,7 @@ namespace CoreDumper
             if(predFramePerBlock>0) Console.WriteLine("frame prédite :" + (f / predFramePerBlock)* predFramePerBlock + " : Pos=" + pred +"(entre "+ FirstFrame+"et"+LastFrame +")");
             else Console.WriteLine("frame prédite :erreur" + " : Pos=" + pred + "(entre " + FirstFrame + "et" + LastFrame + ")");
             long ori_pred = pred;
+            string name_for_decode = "";
             if (pred >= 0 && pred<st.Length)
             {
                 st.Seek(pred, SeekOrigin.Begin);
@@ -157,6 +158,7 @@ namespace CoreDumper
                     byte[] buff = new byte[size];
                     st.Read(buff, 0, (size));
                     Console.WriteLine("fichier différent :" + Encoding.ASCII.GetString(buff));
+                    name_for_decode= Encoding.ASCII.GetString(buff);
                     tmp_temp_st = new FileStream(Encoding.ASCII.GetString(buff), FileMode.Open, FileAccess.Read); 
                     pred = 0;
                 }
@@ -191,7 +193,14 @@ namespace CoreDumper
                             {
                                 Stopwatch sw = new Stopwatch();
                                 sw.Start();
-                                Top.Decode(temp_st, temp_st_2, -1, -1);
+                                if (isExternFile())
+                                {
+                                    Top.Named_Decode(name_for_decode,temp_st, temp_st_2, -1, -1);
+                                }
+                                else
+                                {
+                                    Top.Decode(temp_st, temp_st_2, -1, -1);
+                                }
                                 temp_st_2.Seek(0, SeekOrigin.Begin);
                                 sw.Stop();
                                 Console.WriteLine("deccodage en:" + sw.Elapsed);
@@ -219,7 +228,7 @@ namespace CoreDumper
                         }
 
                     }
-                    else// cas si on est un bloque de base
+                    else// cas si on est un bloque de base(feuille)
                     {
                         if (IsCompressed())//Le fichier est compressé
                         {

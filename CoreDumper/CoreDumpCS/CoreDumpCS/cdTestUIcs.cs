@@ -14,7 +14,7 @@ namespace ConsoleApp1
 {
     public partial class cdTestUIcs : Form
     {
-        CoreDumpDeltaWriter<Deflate_Encoder, Deflate_Decoder> opener;
+        CoreDumpDeltaOpener<Deflate_Decoder> opener;
         long frame_size = 100000000;
         long last_frame=300;
         long first_frame = 0;
@@ -36,8 +36,8 @@ namespace ConsoleApp1
         public cdTestUIcs(string file_to_open)
         {
             InitializeComponent();
-            opener = new CoreDumpDeltaWriter<Deflate_Encoder, Deflate_Decoder>();
-            opener.Decoder = new Deflate_Decoder();
+            opener = new CoreDumpDeltaOpener<Deflate_Decoder>(new Deflate_Decoder());
+           
             opener.readOnlyOpen(file_to_open);
             last_frame=opener.RetrieveFrameCount();
             first_frame = opener.RetrieveFirstFrame();
@@ -66,13 +66,13 @@ namespace ConsoleApp1
         {
             Addr_TextBox.Text =Addr_TrackBar.Value.ToString();
             Addr_TextBox.Update();
-            if (AutoUpdate_Check.Checked)UpdateData();
+            //if (AutoUpdate_Check.Checked)UpdateData();
         }
         private void Frame_Scroll(object sender, EventArgs e)
         {
             Frame_TextBox.Text= Frame_TrackBar.Value.ToString();
             Frame_TextBox.Update();
-            if(AutoUpdate_Check.Checked)UpdateData();
+            //if(AutoUpdate_Check.Checked)UpdateData();
         }
         private void Frame_Type(object sender, EventArgs e)
         {

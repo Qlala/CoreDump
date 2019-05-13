@@ -1,6 +1,7 @@
 #pragma once
 //Configuration static du program => si library 
-
+//CoreDumpUtils
+#define VERBOSE 0
 //CoreDumpHeader
 #define MARK_CHAR_REF 0xAA
 //CoreDumpBlock
@@ -12,3 +13,4 @@
 //deltaImplementation
 #define DELTA_THRESHOLD 0.01	
 #define DELTA_WINDOW 1024
+#define TYPE_FOR_DELTA_SCAN int64_t

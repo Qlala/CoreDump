@@ -1,6 +1,7 @@
 #include "CoreDumpType.h"
 #include "CoreDumpTop.h"
 #include "CoreDumpHeader.h"
+#include "CoreDumpUtils.h"
 #include <string.h>
 #include <stdio.h>
 #include <io.h>
@@ -177,7 +178,7 @@ void cdTop_rebaseTree(CoreDumpFile* cdfptr) {
 
 		cdfptr->tree->child = cdBlock_CreateNewChild_F(cdfptr->file, cdfptr->tree->header_ptr->lastFrame, cdfptr->tree->depth - 1, 0);//temp n'as pas de child car créer en mode no write
 	}
-	printf("arbre rebase\n");
+	printf_if_verbose("arbre rebase\n");
 }
 
 void cdTop_FinishTree(CoreDumpFile* cdfptr) {
@@ -223,12 +224,12 @@ int bImpl_SeparateFileNeeded(int depth,void* param) {
 	return 0;
 }
 int bImpl_per_frame_operation_F(CoreDumpHeader* cdhptr, CoreDumpTop* cdtptr, FILE* frame, int64_t* size){
-	printf("default per frame op F \n");
+	printf_if_verbose("default per frame op F \n");
 	//Size doit être changé  pour corresspondre à la taille écrite.
 	return 0;
 }
 int bImpl_per_frame_operation_P(CoreDumpHeader* cdhptr, CoreDumpTop* cdtptr, char* frame, int64_t* size) {
-	printf("default per frame op P \n");
+	printf_if_verbose("default per frame op P \n");
 	//Size doit être changé  pour corresspondre à la taille écrite.
 	return 0;
 }
