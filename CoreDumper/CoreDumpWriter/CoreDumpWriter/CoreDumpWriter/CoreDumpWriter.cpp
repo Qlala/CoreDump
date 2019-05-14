@@ -14,7 +14,7 @@ extern "C" {
 #include "CoreDumpUtils.h"
 #include "CoreDumpTop.h"
 }
-#define TEST_FRAME_COUNT 1000
+#define TEST_FRAME_COUNT 60000
 void generate_test_frame(const char* filename,size_t frame_size ,double proba_sortie_de_serie) {
 	FILE* myfile = fopen(filename, "wb");
 	//std::random_device rd;
