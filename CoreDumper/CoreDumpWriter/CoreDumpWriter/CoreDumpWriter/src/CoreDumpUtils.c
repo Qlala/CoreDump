@@ -8,6 +8,8 @@ char * get_time_diff(char* buff, struct timespec before, struct timespec after)
 {
 	uint64_t nsec_diff = after.tv_nsec - before.tv_nsec;
 	uint64_t sec_diff = after.tv_sec - before.tv_sec;
+	nsec_diff = nsec_diff < 0 ? nsec_diff + 1000000000 : nsec_diff;
+	sec_diff = nsec_diff < 0 ? sec_diff - 1 : sec_diff;
 	uint64_t mili=(nsec_diff/1000000)%1000;
 	uint64_t micro=(nsec_diff/1000)%1000;
 	uint64_t nano=nsec_diff%1000;

@@ -34,6 +34,7 @@ namespace CoreDumper
                     output.Write(buff, 0, DELTA_WINDOW_SIZE);
                 }
             }
+            output.Position = 0;
             return output;
         }
         static public byte[] RA_ApplyDelta(long pos, long size, Stream delta, Stream source)
@@ -153,7 +154,7 @@ namespace CoreDumper
             int delta_ref_f = BitConverter.ToInt32(bytes, 0);
             int outputsize = 0;
             Stream ref_frame = SearchOriginalFrame(f - delta_ref_f, outputsize);
-            ref_frame.ReadByte();
+            //ref_frame.ReadByte();
 
             return DeltaLib.ApplyDelta(st, ref_frame);
 

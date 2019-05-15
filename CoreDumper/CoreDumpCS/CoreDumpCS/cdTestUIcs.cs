@@ -52,12 +52,15 @@ namespace ConsoleApp1
 
         public void UpdateData()
         {
+            Cursor.Current = Cursors.WaitCursor;
+
             long f = Int64.Parse(Frame_TextBox.Text);
             long pos = Int64.Parse(Addr_TextBox.Text);
             long size = Int64.Parse(Size_TextBox.Text);
             byte[] data = opener.randomAccesFrame(f, pos, size);
             
             DataView.Text = string.Join("|", data);
+            Cursor.Current = Cursors.Default;
             return;
         }
 
@@ -118,6 +121,35 @@ namespace ConsoleApp1
         }
 
         private void AutoUpdate_Check_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+            {
+                saveFileDialog.DefaultExt = ".frame";
+                saveFileDialog.AddExtension = true;
+                saveFileDialog.Filter = "Frame files (*.frame)|*.frame|All files (*.*)|*.*";
+                saveFileDialog.InitialDirectory = System.IO.Directory.GetCurrentDirectory();
+
+                if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    long f = Int64.Parse(Frame_TextBox.Text);
+                    //System.IO.Directory.SetCurrentDirectory(Path.GetDirectoryName(openFileDialog.FileName));
+                    using (Stream savedframe = saveFileDialog.OpenFile())
+                    {
+                        savedframe.Position = 0;
+                        Stream temp = opener.RetriveFrame(f);
+                        temp.CopyTo(savedframe);
+                        Console.WriteLine("sauvegardé:" + f);
+                    }
+                }
+            }
+         }
+
+        private void toolStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
 
         }

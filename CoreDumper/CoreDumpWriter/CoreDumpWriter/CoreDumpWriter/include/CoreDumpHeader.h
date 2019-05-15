@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include<stdint.h>
 #pragma once
-enum config_flags { COMPRESSED = 0x1, FINISHED = 0x2, BASE = 0x4, NO_PRED = 0x8, EXTERN_FILE = 0x10 ,IMPORTANT=0x80};
+enum config_flags { COMPRESSED = 0x1, FINISHED = 0x2, BASE = 0x4, _32BIT_HEADER = 0x8, EXTERN_FILE = 0x10 ,IMPORTANT=0x80};
 #define CD_HEADER_SIZE 8*7+1;
 struct coreDumpHeader_S {
 	int64_t headerSize ;//pas stocké

@@ -7,6 +7,8 @@
 #include <io.h>
 #ifdef _WIN32
 #include <Windows.h>
+#else
+#include <pthread.h>
 #endif // _WIN32
 
 
@@ -15,7 +17,8 @@ void cdTop_InitSemaphore(CoreDumpTop* cdtptr) {
 	cdtptr->protection_Mutex = CreateMutex(0, 0, 0);
 	cdtptr->semaphore = 0;
 #else
-#error "A implémenter avec Pthread"
+	cdtptr->p_mutex = PTHREAD_MUTEX_INITIALIZER;
+	cdtptr->semaphore = 0;
 #endif // _WIN32
 
 
@@ -28,7 +31,9 @@ void cdTop_IncSema(CoreDumpTop* cdtptr)
 	cdtptr->semaphore++;
 	ReleaseMutex(cdtptr->protection_Mutex);
 #else
-#error "pas fait"
+	pthread_mutex_lock(&cdtptr->p_mutex);
+	cdtptr->semaphore++;
+	pthread_mutex_unlock(&cdtptr->p_mutex);
 #endif // _WIN32
 
 
@@ -40,7 +45,9 @@ void cdTop_ReleaseSema(CoreDumpTop* cdtptr)
 	cdtptr->semaphore--;
 	ReleaseMutex(cdtptr->protection_Mutex);
 #else
-#error "pas fait"
+	pthread_mutex_lock(&cdtptr->p_mutex);
+	cdtptr->semaphore--;
+	pthread_mutex_unlock(&cdtptr->p_mutex);
 #endif // _WIN32
 }
 void cdTop_WaitSema(CoreDumpTop* cdtptr) 
@@ -54,7 +61,13 @@ void cdTop_WaitSema(CoreDumpTop* cdtptr)
 	} while (cdtptr->semaphore != 0);
 
 #else
-#error "Pthread"
+	pthread_mutex_lock(&cdtptr->p_mutex);
+	do {
+		pthread_mutex_unlock(&cdtptr->p_mutex);
+		Sleep(1);
+		pthread_mutex_lock(&cdtptr->p_mutex);
+	} while (cdtptr->semaphore != 0);
+
 #endif // _WIN32
 }
 int cdTop_TryWaitSema(CoreDumpTop* cdtptr)
@@ -66,7 +79,12 @@ int cdTop_TryWaitSema(CoreDumpTop* cdtptr)
 	ReleaseMutex(cdtptr->protection_Mutex);
 	return result;
 #else
-#error "Pthread"
+	int result;
+	pthread_mutex_lock(&cdtptr->p_mutex);
+	result = cdtptr->semaphore <= 0;
+	pthread_mutex_unlock(&cdtptr->p_mutex);
+	return result;
+
 #endif // _WIN32
 }
 
@@ -89,8 +107,6 @@ int cdTop_MoveFile(char* src,char*dst) {
 	remove(dst);
 	rename(src, dst);
 #endif // _WIN32
-
-
 }
 
 

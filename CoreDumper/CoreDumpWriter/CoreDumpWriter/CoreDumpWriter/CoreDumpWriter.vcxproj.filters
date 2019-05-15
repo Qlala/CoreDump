@@ -12,9 +12,6 @@
     <Filter Include="Lib">
       <UniqueIdentifier>{8eba5cf3-cf79-4f97-a3f8-6bb39cd317f6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Lib\xdelta">
-      <UniqueIdentifier>{b9e8d493-6284-4fc2-871c-4258817ef491}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Lib\zllib">
       <UniqueIdentifier>{27e10854-a2f8-42e7-b094-710382ba3c85}</UniqueIdentifier>
     </Filter>
@@ -36,9 +33,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="lib\xdelta-release3_1_apl\xdelta3\xdelta3.h">
-      <Filter>Lib\xdelta</Filter>
-    </ClInclude>
     <ClInclude Include="lib\zlib-1.2.11\zlib.h">
       <Filter>Fichiers d%27en-tête\lib</Filter>
     </ClInclude>
@@ -74,12 +68,6 @@
     </ClInclude>
     <ClInclude Include="include\SeparatedFileImplementation.h">
       <Filter>Fichiers d%27en-tête\Implementation</Filter>
-    </ClInclude>
-    <ClInclude Include="include\xdelta_conf.h">
-      <Filter>Fichiers d%27en-tête\Implementation</Filter>
-    </ClInclude>
-    <ClInclude Include="include\xdelta3_conf.h">
-      <Filter>Lib\xdelta</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -127,9 +115,6 @@
     </ClCompile>
     <ClCompile Include="lib\zlib-1.2.11\zutil.c">
       <Filter>Lib\zllib</Filter>
-    </ClCompile>
-    <ClCompile Include="lib\xdelta-release3_1_apl\xdelta3\xdelta3.c">
-      <Filter>Lib\xdelta</Filter>
     </ClCompile>
     <ClCompile Include="src\CoreDumpBlock.c">
       <Filter>Fichiers sources\src</Filter>

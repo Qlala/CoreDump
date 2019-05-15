@@ -2,6 +2,8 @@
 #include "CoreDumpHeader.h"
 #ifdef _WIN32
 #include <Windows.h>
+#else
+#include <pthread.h>
 #endif // _WIN32
 
 
@@ -46,7 +48,8 @@ struct CoreDumpTop_S
 	HANDLE protection_Mutex;
 	volatile int64_t semaphore;
 #else
-	#error version pour Pthread
+	pthread_mutex_t p_mutex;
+	volatile int64_t semaphore;
 
 #endif // _WIN32
 

@@ -96,7 +96,7 @@ void push_time_csv(const char* file_name, int64_t n,int64_t t_ns, int64_t t_s,in
 		fstream file;
 		file.open(file_name, ios::app | ios::out);
 		if (file.is_open()) {
-			file << n << ';' << (t_ns < 0 ? t_ns + 1000000000 : t_ns) << ";" << t_s << ';' << size << ";" << (size*100.f / ((n + 1)* cycle_size)) << ";" << endl;
+			file << n << ';' << (t_ns < 0 ? t_ns + 1000000000 : t_ns) << ";" << (t_ns < 0 ? t_s-1:t_s )<< ';' << size << ";" << (size*100.f / ((n + 1)* cycle_size)) << ";" << endl;
 			file.close();
 		}
 	}
@@ -151,8 +151,8 @@ int main()
 			curr_size += std::experimental::filesystem::file_size("test.set");
 		}
 		push_time_csv("../result/result.csv", i, t2.tv_nsec - t1.tv_nsec, t2.tv_sec - t1.tv_sec,frame_size,curr_size);
-		sum_ns += (t2.tv_nsec - t1.tv_nsec);
-		sum_s += (t2.tv_sec - t1.tv_sec);
+		sum_ns += (t2.tv_nsec - t1.tv_nsec) < 0 ? (t2.tv_nsec - t1.tv_nsec) + 1000000000: (t2.tv_nsec - t1.tv_nsec);
+		sum_s += (t2.tv_nsec - t1.tv_nsec) < 0 ? (t2.tv_sec - t1.tv_sec)-1: (t2.tv_sec - t1.tv_sec);
 	}
 	double med_ns = sum_ns /i;
 	double med_s = sum_s / i;

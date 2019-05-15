@@ -91,6 +91,8 @@ void cdHeader_ReadHeader_F(coreDumpHeader* cdptr, FILE* fst)//le stream est mis 
 {
 	//cdHeader_goStartIndex_F(cdptr, fst);
 	//byte[] bytes = new byte[8];
+	//configuration = bytes[0];
+	fread(&(cdptr->configuration), sizeof(cdptr->configuration), 1, fst);
 	//input.Read(bytes, 0, 8);
 	//totalSize = BitConverter.ToInt64(bytes, 0);
 	fread(&(cdptr->totalSize), sizeof(cdptr->totalSize), 1, fst);
@@ -113,13 +115,17 @@ void cdHeader_ReadHeader_F(coreDumpHeader* cdptr, FILE* fst)//le stream est mis 
 	//firstFrameOfLastBlock = BitConverter.ToInt64(bytes, 0);
 	fread(&(cdptr->firstFrameOfLastBlock), sizeof(cdptr->firstFrameOfLastBlock), 1, fst);
 	//input.Read(bytes, 0, 1);
-	//configuration = bytes[0];
-	fread(&(cdptr->configuration), sizeof(cdptr->configuration), 1, fst);
+
 }
 
 
 void cdHeader_WriteHeader_F(coreDumpHeader* cdptr, FILE* fst)//écrie le header dans un stream : n'est pas responsable de la position dans le stream ou du fait que le stream soit inscriptible
 {
+	//compatibilté perdu (configuration passé en premier champ)
+	fwrite(&(cdptr->configuration), sizeof(cdptr->configuration), 1, fst);
+	//bytes = BitConverter.GetBytes(configuration);
+	//output.Write(bytes, 0, 1);
+
 	fwrite(&(cdptr->totalSize), sizeof(cdptr->totalSize), 1, fst);
 	//byte[] bytes = BitConverter.GetBytes(totalSize);
 	//output.Write(bytes, 0, bytes.Length);
@@ -148,9 +154,7 @@ void cdHeader_WriteHeader_F(coreDumpHeader* cdptr, FILE* fst)//écrie le header d
 	//bytes = BitConverter.GetBytes(firstFrameOfLastBlock);
 	//output.Write(bytes, 0, bytes.Length);
 
-	fwrite(&(cdptr->configuration), sizeof(cdptr->configuration), 1, fst);
-	//bytes = BitConverter.GetBytes(configuration);
-	//output.Write(bytes, 0, 1);
+
 	fflush(fst);
 }
 

@@ -6,7 +6,13 @@
 #include "CoreDumpConfig.h"
 #include <stdlib.h>
 #include<string.h>
-#include <Windows.h>
+#ifdef _WIN32
+	#include <Windows.h>
+#else
+	#include <pthread.h>
+#endif // _WIN32
+
+
 #include <time.h>
 
 char block_buff[BLOCK_BUFF_SIZE];
@@ -122,7 +128,11 @@ struct dataThreadEncode
 	int64_t* outSize;
 	char* input_name;
 	char * output_name;
+#ifdef _WIN32
 	HANDLE* hThread;
+#else
+	pthread_t thread;
+#endif // _WIN32	
 };
 #ifdef _WIN32
 DWORD WINAPI ThreadProc_Encode(LPVOID lpParameter) {
@@ -153,7 +163,33 @@ DWORD WINAPI ThreadProc_Encode(LPVOID lpParameter) {
 	CloseHandle(hThread);
 	return 0;
 }
-#endif // _WIN32
+#else
+	struct dataThreadEncode* param = lpParameter;
+	pthread_t hThread = (param->hThread);
+	//printf("Thread de compression lancé de %s vers %s\n", param->input_name, param->output_name);
+	cdTop_IncSema(param->cdtptr);
+	FILE * input = fopen(param->input_name, "rb");
+	FILE * output = fopen(param->output_name, "wb");
+	if (!input) {
+		fprintf(stderr, "error opening %s: %s \n", param->input_name, strerror(errno));
+	}
+	if (!output) {
+		fprintf(stderr, "error opening %s: %s \n", param->output_name, strerror(errno));
+	}
+	param->cdtptr->Encode_FF(input, output, param->inSize, param->outSize);
+	cdTop_ReleaseSema(param->cdtptr);
+	
+	do {
+		fclose(input);
+		fclose(output);
+		remove(param->input_name);
+	} while (rename(param->output_name, param->input_name) != 0);
+	free(param->output_name);
+	free(param->input_name);
+	free(param->hThread);
+	free(param);
+	return 0;
+	#endif // _WIN32
 
 
 
@@ -174,7 +210,7 @@ void cdBlock_ThreadedEncode_FF(CoreDumpTop* cdtptr,char* input_name,char* output
 	#ifdef _WIN32
 		*(param->hThread)=CreateThread(NULL, NULL, ThreadProc_Encode, param, NULL,NULL);
 	#else
-		#error "Pthread pas implémente"
+		pthread_create(param->thread, NULL, ThreadProc_Encode, param);
 	#endif
 	//on prend le controle des fichier
 

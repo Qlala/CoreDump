@@ -97,7 +97,10 @@ namespace CoreDumper
         }
         protected void WriteHeader(Stream output)//écrie le header dans un stream : n'est pas responsable de la position dans le stream ou du fait que le stream soit inscriptible
         {
-            byte[] bytes = BitConverter.GetBytes(totalSize);
+            byte[] bytes = BitConverter.GetBytes(configuration);
+            output.Write(bytes, 0, 1);
+
+            bytes = BitConverter.GetBytes(totalSize);
             output.Write(bytes, 0, bytes.Length);
 
             bytes = BitConverter.GetBytes(predBlockSize);
@@ -118,8 +121,7 @@ namespace CoreDumper
             bytes = BitConverter.GetBytes(firstFrameOfLastBlock);
             output.Write(bytes, 0, bytes.Length);
 
-            bytes = BitConverter.GetBytes(configuration);
-            output.Write(bytes, 0, 1);
+
 
         }
         public void UpdateHeader(Stream output)//ne chnage pas la position dans le stream
@@ -133,6 +135,9 @@ namespace CoreDumper
         {
             GoStartIndex(input);
             byte[] bytes = new byte[8];
+            input.Read(bytes, 0, 1);
+            configuration = bytes[0];
+
             input.Read(bytes, 0, 8);
             totalSize = BitConverter.ToInt64(bytes, 0);
             input.Read(bytes, 0, 8);
@@ -147,8 +152,7 @@ namespace CoreDumper
             lastAddedBlockPos = BitConverter.ToInt64(bytes, 0);
             input.Read(bytes, 0, 8);
             firstFrameOfLastBlock = BitConverter.ToInt64(bytes, 0);
-            input.Read(bytes, 0, 1);
-            configuration = bytes[0];
+
         }
 
         //retourne la position du prochain block(si le header à le flags BASE alors il s'agit de la frame que l'on cherche)

@@ -171,15 +171,11 @@
     <ClInclude Include="include\DeflateImplementation.h" />
     <ClInclude Include="include\DeltaImplementation.h" />
     <ClInclude Include="include\SeparatedFileImplementation.h" />
-    <ClInclude Include="include\xdelta3_conf.h" />
-    <ClInclude Include="include\xdelta_conf.h" />
     <ClInclude Include="lib\fossil-2.8\delta.h" />
-    <ClInclude Include="lib\xdelta-release3_1_apl\xdelta3\xdelta3.h" />
     <ClInclude Include="lib\zlib-1.2.11\zlib.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CoreDumpWriter.cpp" />
-    <ClCompile Include="lib\xdelta-release3_1_apl\xdelta3\xdelta3.c" />
     <ClCompile Include="lib\zlib-1.2.11\adler32.c" />
     <ClCompile Include="lib\zlib-1.2.11\compress.c" />
     <ClCompile Include="lib\zlib-1.2.11\crc32.c" />
