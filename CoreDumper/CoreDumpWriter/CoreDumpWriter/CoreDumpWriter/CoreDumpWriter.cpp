@@ -14,11 +14,11 @@ extern "C" {
 #include "CoreDumpUtils.h"
 #include "CoreDumpTop.h"
 }
-#define TEST_FRAME_COUNT 60000
+#define TEST_FRAME_COUNT 36000
+std::minstd_rand0 gen(23);
 void generate_test_frame(const char* filename,size_t frame_size ,double proba_sortie_de_serie) {
 	FILE* myfile = fopen(filename, "wb");
 	//std::random_device rd;
-	std::minstd_rand0 gen(clock());
 	std::uniform_real_distribution<float> dis_proba(0., 1.);
 	std::uniform_int_distribution<unsigned short> dis_int(0X00, 0XFF);
 	char ser = dis_int(gen);
@@ -51,7 +51,7 @@ int main_test_frame_asF()
 
 void alter_frame(char* frame, int64_t size,float proba_change) {
 	//std::random_device rd;
-	std::minstd_rand0 gen(clock());
+
 	std::uniform_real_distribution<float> dis_proba(0., 1.);
 	std::uniform_int_distribution<unsigned short> dis_int(0X00, 0XFF);
 	for (int64_t i = 0; i < size/8; i+=1) {

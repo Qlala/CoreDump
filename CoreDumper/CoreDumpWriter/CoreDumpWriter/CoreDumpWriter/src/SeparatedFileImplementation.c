@@ -1,6 +1,13 @@
 
 #include <string.h>
+#ifdef _WIN32
 #include <Windows.h>
+#else
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif // _WIN32
+
 #include "SeparatedFileImplementation.h"
 #include <math.h>
 
@@ -12,6 +19,9 @@ typedef struct sepfile_struct_S sepfile_struct;
 int cdSepFile_createDirectory(char* dir) {
 #ifdef _WIN32
 	return ERROR_ALREADY_EXISTS == CreateDirectoryA(dir, NULL);
+#else
+	int check=mkdir(dirname);
+	return errno==EEXIST||check==0
 #endif // _WIN32	
 }
 

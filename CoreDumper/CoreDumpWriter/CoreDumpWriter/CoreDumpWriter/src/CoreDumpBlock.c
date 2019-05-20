@@ -426,6 +426,7 @@ int cdBlock_addFrameTree_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE* fst
 	if (cdBlock_addFrame_F(cdbptr->child, cdtptr, fst,frame)) {
 
 		cdBlock_addChildBlock_F(cdbptr->child->header_ptr, cdbptr->header_ptr, cdtptr, fst, cdbptr->depth, &cdbptr->blockCount,0);
+		cdBlock_propagateImportant(cdbptr);
 		if (cdHeader_PredictHit_F(cdbptr->header_ptr, fst) && !cdTop_MaxBlockCountReach(cdtptr,cdbptr->depth, cdbptr->blockCount)) {//pas de problème on peut faire une nouvelle branche
 			printf_if_verbose("on continue l'abre de niveau d=%i", cdbptr->depth);
 
@@ -452,7 +453,6 @@ int cdBlock_addFrameTree_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE* fst
 }
 int cdBlock_addFrameLeaf_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst,FILE* frame) {
 	int64_t  sp =cdbptr->header_ptr->startPosition +cdbptr->header_ptr->totalSize;
-	//System.Console.WriteLine("block écris en " + sp.ToString());
 	if (cdTop_EncodingNeeded(cdtptr,0))
 	{
 		_fseeki64(fst, sp, SEEK_SET);
@@ -487,11 +487,9 @@ int cdBlock_addFrameLeaf_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst,
 			fread(block_buff, 1, size - i, frame);
 			fwrite(block_buff, 1, size - i, fst);
 			int64_t marker_pos = _ftelli64(fst);
-			//st.CopyTo(FileSource);
 			//BlockMarker(FileSource);//marker de fin de block
 
 			cdHeader_BlockMarker_F(fst);//marker de fin de block
-			//addBlockSize(sp, st.Length + 1, 1);
 			printf_if_verbose("frame copie a la position : %lli et marker en : %lli copie de %lli\n", sp, marker_pos, size);
 			cdHeader_addBlockSize(cdbptr->header_ptr, sp, size + 1, 1, -1);
 		}
@@ -507,10 +505,6 @@ int cdBlock_addFrameLeaf_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst,
 	{
 		printf_if_verbose("On a fini une feuille");
 		cdHeader_TerminateBlock(cdbptr->header_ptr,fst);
-		/*if (!Top.MaxBlockCountReach(0, blockCount))
-		{
-			Console.WriteLine("echec predicteur d=" + Depth + ", on fini avec Totalize=" + TotalSize + "(entre " + FirstFrame + " et " + LastFrame + ")");
-		}*/
 		return 1;//on a un problème
 	}
 
@@ -522,6 +516,7 @@ int cdBlock_addFrameTreeFile_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*
 	}
 	if (cdBlock_addFrame_F(cdbptr->child, cdtptr, cdbptr->nodeFile, frame)) {
 		cdBlock_addChildBlockFile_F(cdbptr->child->header_ptr, cdbptr->header_ptr, cdtptr, &cdbptr->nodeFile, cdbptr->nodeFileName, cdbptr->depth, &cdbptr->blockCount, 0);
+		cdBlock_propagateImportant(cdbptr);
 		if(cdHeader_PredictHit_F(cdbptr->header_ptr,fst)&& !cdTop_MaxBlockCountReach(cdtptr,cdbptr->depth, cdbptr->blockCount))//pas de problème on peut faire une nouvelle branche
 		{
 
@@ -557,9 +552,8 @@ int cdBlock_addFrame_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst,FILE
 {
 	if (cdHeader_isExternFile(cdbptr->header_ptr) || cdTop_SeparateFileNeeded(cdtptr,cdbptr->depth)) {
 		cdHeader_SetExternFile(cdbptr->header_ptr);
-		int v=cdBlock_addFrameTreeFile_F(cdbptr, cdtptr, fst, frame);
-		cdBlock_propagateImportant(cdbptr);
 		cdHeader_UpdateHeader(cdbptr->header_ptr, fst);
+		int v=cdBlock_addFrameTreeFile_F(cdbptr, cdtptr, fst, frame);
 		return v;
 	}
 	else {
@@ -570,8 +564,6 @@ int cdBlock_addFrame_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst,FILE
 		else
 		{
 			int v = cdBlock_addFrameTree_F(cdbptr, cdtptr, fst, frame);
-			cdBlock_propagateImportant(cdbptr);
-			cdHeader_UpdateHeader(cdbptr->header_ptr, fst);
 			return v;
 		}
 	}
@@ -582,9 +574,10 @@ int cdBlock_addFrame_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst,FILE
 int cdBlock_addFrameTree_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE* fst, FILE* frame, int64_t frame_size)
 {
 	if (cdBlock_addFrame_P(cdbptr->child, cdtptr, fst, frame, frame_size)) {
-
+		cdBlock_propagateImportant(cdbptr);
 		cdBlock_addChildBlock_F(cdbptr->child->header_ptr, cdbptr->header_ptr, cdtptr, fst, cdbptr->depth, &cdbptr->blockCount, 0);
 		if (cdHeader_PredictHit_F(cdbptr->header_ptr, fst) && !cdTop_MaxBlockCountReach(cdtptr, cdbptr->depth, cdbptr->blockCount)) {//pas de problème on peut faire une nouvelle branche
+			
 			cdBlock_DeleteBlock(&cdbptr->child);
 			cdbptr->child = cdBlock_CreateNewChild_F(fst, cdbptr->header_ptr->lastFrame, cdbptr->depth - 1, 0);//CreateNewChild(FileSource);
 			printf_if_verbose("on continue l'abre de niveau d=%i\n", cdbptr->depth);
@@ -671,9 +664,10 @@ int cdBlock_addFrameTreeFile_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*
 	}
 	if (cdBlock_addFrame_P(cdbptr->child, cdtptr, cdbptr->nodeFile, frame,frame_size)) {
 		cdBlock_addChildBlockFile_F(cdbptr->child->header_ptr, cdbptr->header_ptr, cdtptr, &cdbptr->nodeFile, cdbptr->nodeFileName, cdbptr->depth, &cdbptr->blockCount, 0);
+		cdBlock_propagateImportant(cdbptr);
 		if (cdHeader_PredictHit_F(cdbptr->header_ptr, fst) && !cdTop_MaxBlockCountReach(cdtptr, cdbptr->depth, cdbptr->blockCount))//pas de problème on peut faire une nouvelle branche
 		{
-
+			
 			cdBlock_CreateNewChildFile_F(cdbptr, cdtptr, fst);
 			cdBlock_DeleteBlock(&cdbptr->child);
 			cdbptr->child = cdBlock_CreateNewChild_F(cdbptr->nodeFile, cdbptr->header_ptr->lastFrame, cdbptr->depth - 1, 0);//CreateNewChild(FileSource);
@@ -709,8 +703,6 @@ int cdBlock_addFrame_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst, cha
 		cdHeader_SetExternFile(cdbptr->header_ptr);
 		cdHeader_UpdateHeader(cdbptr->header_ptr, fst);
 		int v = cdBlock_addFrameTreeFile_P(cdbptr, cdtptr, fst, frame,frame_size);
-		cdBlock_propagateImportant(cdbptr);
-		
 		return v;
 	}
 	else {
@@ -722,8 +714,6 @@ int cdBlock_addFrame_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*fst, cha
 		{
 			
 			int v = cdBlock_addFrameTree_P(cdbptr, cdtptr, fst, frame,frame_size);
-			cdBlock_propagateImportant(cdbptr);
-			cdHeader_UpdateHeader(cdbptr->header_ptr, fst);
 			return v;
 		}
 	}
