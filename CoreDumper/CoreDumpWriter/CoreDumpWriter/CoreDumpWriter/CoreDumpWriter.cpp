@@ -9,12 +9,16 @@
 #include <ctime>
 #include <random>
 #include <filesystem>
+#include <sstream>
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 extern "C" {
 #include "CoreDumpImpl.h"
 #include "CoreDumpUtils.h"
 #include "CoreDumpTop.h"
 }
-#define TEST_FRAME_COUNT 36000
+#define TEST_FRAME_COUNT 1000
 std::minstd_rand0 gen(23);
 void generate_test_frame(const char* filename,size_t frame_size ,double proba_sortie_de_serie) {
 	FILE* myfile = fopen(filename, "wb");
@@ -49,21 +53,27 @@ int main_test_frame_asF()
 	return 0;
 }
 
-void alter_frame(char* frame, int64_t size,float proba_change) {
+int alter_frame(char* frame, int64_t size,float proba_change,float proba_no_change=0.,int n_octet=1) {
 	//std::random_device rd;
-
+	int n_change = 0;
 	std::uniform_real_distribution<float> dis_proba(0., 1.);
 	std::uniform_int_distribution<unsigned short> dis_int(0X00, 0XFF);
-	for (int64_t i = 0; i < size/8; i+=1) {
-		if (dis_proba(gen) < proba_change) {
-			char a= dis_int(gen);
-			printf("alteration:%lli %hhu=>%hhu\n", i,frame[i],a);
-			frame[i] = a;
-			
-			i += 10000;
+	if (dis_proba(gen) > proba_no_change) {
+		for (int64_t i = 0; i < size / 8; i += 1) {
+			if (dis_proba(gen) < proba_change) {
+				char a = dis_int(gen);
+				int64_t target = i + n_octet < size ? i + n_octet : size;
+				for (; i < target; i++) {
+					printf("alteration:%lli %hhu=>%hhu\n", i, frame[i], a);
+					frame[i] = a;
+					n_change++;
+				}
+				i += 10000;
+			}
 		}
 	}
 	//frame[0] = dis_char(gen);
+	return n_change;
 }
 size_t computeSizeOfDir(const char* path) {
 	
@@ -85,8 +95,19 @@ size_t computeSizeOfDir(const char* path) {
 	return size;
 }
 
+void start_csv(const char* file_name)
+{
+	using namespace std;
+	remove(file_name);
+	fstream file;
+	file.open(file_name, ios::app | ios::out);
+	if (file.is_open()) {
+		file << "frame_n" << ';' << "nano_sec" << ";" << "sec"<< ';' << "size" << ";" << "compression rate" << ";" <<"n_change"<<";" <<endl;
+		file.close();
+	}
+}
 
-void push_time_csv(const char* file_name, int64_t n,int64_t t_ns, int64_t t_s,int64_t cycle_size, size_t size)
+void push_time_csv(const char* file_name, int64_t n,int64_t t_ns, int64_t t_s,int64_t cycle_size, size_t size,int n_change)
 {
 	try {
 		
@@ -96,7 +117,7 @@ void push_time_csv(const char* file_name, int64_t n,int64_t t_ns, int64_t t_s,in
 		fstream file;
 		file.open(file_name, ios::app | ios::out);
 		if (file.is_open()) {
-			file << n << ';' << (t_ns < 0 ? t_ns + 1000000000 : t_ns) << ";" << (t_ns < 0 ? t_s-1:t_s )<< ';' << size << ";" << (size*100.f / ((n + 1)* cycle_size)) << ";" << endl;
+			file << n << ';' << (t_ns < 0 ? t_ns + 1000000000 : t_ns) << ";" << (t_ns < 0 ? t_s-1:t_s )<< ';' << size << ";" << (size*100.f / ((n + 1)* cycle_size)) << ";" <<n_change <<";"<< endl;
 			file.close();
 		}
 	}
@@ -111,7 +132,8 @@ int main()
 	char string_buff[100];
 
 	//freopen("log.txt", "w+", stdout);
-	remove("../result/result.csv");
+	//remove("../result/result.csv");
+	start_csv("../result/result.csv");
 	std::experimental::filesystem::remove_all("test/");
 	FILE* test_frame = fopen("test_frame_ref_forced", "rb");
 	if (!test_frame) {
@@ -144,15 +166,18 @@ int main()
 
 		timespec_get(&t2, TIME_UTC);
 		std::cout << "frame " << i << " en " << get_time_diff(string_buff, t1, t2) << std::endl;
-		alter_frame(frame_buff, frame_size, 0.000001);
+		int n_change=alter_frame(frame_buff, frame_size, 0.000001,0.0,1);
 
 		if (cdTop_TryWaitSema(test->top)) {
 			curr_size = computeSizeOfDir("test/");
 			curr_size += std::experimental::filesystem::file_size("test.set");
 		}
-		push_time_csv("../result/result.csv", i, t2.tv_nsec - t1.tv_nsec, t2.tv_sec - t1.tv_sec,frame_size,curr_size);
+		push_time_csv("../result/result.csv", i, t2.tv_nsec - t1.tv_nsec, t2.tv_sec - t1.tv_sec,frame_size,curr_size,n_change);
 		sum_ns += (t2.tv_nsec - t1.tv_nsec) < 0 ? (t2.tv_nsec - t1.tv_nsec) + 1000000000: (t2.tv_nsec - t1.tv_nsec);
 		sum_s += (t2.tv_nsec - t1.tv_nsec) < 0 ? (t2.tv_sec - t1.tv_sec)-1: (t2.tv_sec - t1.tv_sec);
+		std::stringstream stri_st;
+		stri_st << "Frame:" << i << "/" << TEST_FRAME_COUNT<< std::endl;
+		SetConsoleTitleA((stri_st.str()).c_str());
 	}
 	double med_ns = sum_ns /i;
 	double med_s = sum_s / i;

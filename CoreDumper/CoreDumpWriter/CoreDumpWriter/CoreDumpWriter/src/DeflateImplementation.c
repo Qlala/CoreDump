@@ -25,8 +25,8 @@ int defImpl_Encode_FF(FILE *source, FILE *dest,int64_t insize,int64_t *outSize)
 	int ret, flush;
 	unsigned have;
 	z_stream strm;
-	unsigned char in[CHUNK];
-	unsigned char out[CHUNK];
+	unsigned char* in=malloc(CHUNK);
+	unsigned char* out= malloc(CHUNK);
 	int64_t outsize_loc=0;
 
 	/* allocate deflate state */
@@ -35,14 +35,15 @@ int defImpl_Encode_FF(FILE *source, FILE *dest,int64_t insize,int64_t *outSize)
 	strm.opaque = Z_NULL;
 	ret = deflateInit(&strm, COMPRESSION_LEVEL);
 	if (ret != Z_OK)
-		return ret;
+		goto finally;
 
 	/* compress until end of file */
 	do {
 		strm.avail_in = fread(in, 1, CHUNK, source);
 		if (ferror(source)) {
 			(void)deflateEnd(&strm);
-			return Z_ERRNO;
+			ret=Z_ERRNO;
+			goto finally;
 		}
 		flush = feof(source) ? Z_FINISH : Z_NO_FLUSH;
 		strm.next_in = in;
@@ -58,7 +59,8 @@ int defImpl_Encode_FF(FILE *source, FILE *dest,int64_t insize,int64_t *outSize)
 			if (fwrite(out, 1, have, dest) != have || ferror(dest)) {
 				printf("error : %s\n", strerror(dest));
 				(void)deflateEnd(&strm);
-				return Z_ERRNO;
+				ret=Z_ERRNO;
+				goto finally;
 			}
 			outsize_loc += have;
 		} while (strm.avail_out == 0);
@@ -71,7 +73,13 @@ int defImpl_Encode_FF(FILE *source, FILE *dest,int64_t insize,int64_t *outSize)
 	/* clean up and return */
 	(void)deflateEnd(&strm);
 	*outSize = outsize_loc;
-	return Z_OK;
+	ret=Z_OK;
+	goto finally;
+
+	finally:
+		free(in);
+		free(out);
+		return ret;
 	
 }
 

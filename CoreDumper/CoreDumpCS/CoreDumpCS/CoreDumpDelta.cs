@@ -14,7 +14,7 @@ namespace CoreDumper
 {
     class DeltaLib
     {
-        const int DELTA_WINDOW_SIZE = 1024;
+        const int DELTA_WINDOW_SIZE = 64;//1024
         static public MemoryStream ApplyDelta(Stream delta, Stream source)
         {
             MemoryStream output = new MemoryStream();

@@ -262,7 +262,8 @@ void cdBlock_addChildBlockFile_F(coreDumpHeader* src_cdptr, coreDumpHeader* dst_
 
 		cdHeader_addBlockSize(dst_cdptr, start_pos, strlen(nodeFileName) + 1, cdHeader_FrameInBlock(src_cdptr), src_cdptr->firstFrame);
 		#ifndef USE_THREADED_ENCODE
-			fclose(node_fst);
+			fclose(*node_fst);
+			fclose(temp_node);
 			remove(nodeFileName);
 			rename(enc_node_name, nodeFileName);
 			free(enc_node_name);
