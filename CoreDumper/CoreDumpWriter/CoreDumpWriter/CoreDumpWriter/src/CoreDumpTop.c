@@ -194,7 +194,7 @@ void cdTop_rebaseTree(CoreDumpFile* cdfptr) {
 
 		cdfptr->tree->child = cdBlock_CreateNewChild_F(cdfptr->file, cdfptr->tree->header_ptr->lastFrame, cdfptr->tree->depth - 1, 0);//temp n'as pas de child car créer en mode no write
 	}
-	printf_if_verbose("arbre rebase\n");
+	printf("arbre rebase\n");//remetre sous condition verbose
 }
 
 void cdTop_FinishTree(CoreDumpFile* cdfptr) {
@@ -239,12 +239,12 @@ int bImpl_EncodingNeeded(int depth,void* param) {
 int bImpl_SeparateFileNeeded(int depth,void* param) {
 	return 0;
 }
-int bImpl_per_frame_operation_F(CoreDumpHeader* cdhptr, CoreDumpTop* cdtptr, FILE* frame, int64_t* size){
+int bImpl_per_frame_operation_F(FILE* fst,CoreDumpHeader* cdhptr, CoreDumpTop* cdtptr, FILE* frame, int64_t* size){
 	printf_if_verbose("default per frame op F \n");
 	//Size doit être changé  pour corresspondre à la taille écrite.
 	return 0;
 }
-int bImpl_per_frame_operation_P(CoreDumpHeader* cdhptr, CoreDumpTop* cdtptr, char* frame, int64_t* size) {
+int bImpl_per_frame_operation_P(FILE* fst,CoreDumpHeader* cdhptr, CoreDumpTop* cdtptr, char* frame, int64_t* size) {
 	printf_if_verbose("default per frame op P \n");
 	//Size doit être changé  pour corresspondre à la taille écrite.
 	return 0;

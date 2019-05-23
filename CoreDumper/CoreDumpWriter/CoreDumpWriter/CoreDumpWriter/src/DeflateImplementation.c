@@ -106,7 +106,7 @@ int defImpl_Encode_PF(char *source, FILE *dest, int64_t inSize, int64_t *outSize
 	do {
 		have_in = (inSize - ((int64_t)source - (int64_t)source_st)) >= CHUNK ? CHUNK : inSize - ((int64_t)source - (int64_t)source_st);
 		strm.avail_in = have_in;
-		memcpy(in, source, have_in);
+		memcpy(in, source,(size_t) have_in);
 		source += CHUNK;
 		/*if (ferror(source)) {
 			(void)deflateEnd(&strm);
@@ -148,7 +148,7 @@ int defImpl_Encode_PP(char *source, char **dest, int64_t inSize, int64_t* outSiz
 {
 	int ret, flush;
 	unsigned have;
-	int have_in;
+	int64_t have_in;
 	z_stream strm;
 	unsigned char in[CHUNK];
 	unsigned char out[CHUNK];
@@ -169,7 +169,7 @@ int defImpl_Encode_PP(char *source, char **dest, int64_t inSize, int64_t* outSiz
 
 		have_in = (inSize-((int64_t)source - (int64_t)source_st)) >= CHUNK   ? CHUNK : inSize - ((int64_t)source - (int64_t)source_st);
 		strm.avail_in = have_in;
-		memcpy(in,source,have_in);
+		memcpy(in,source,(size_t)have_in);
 		source += CHUNK;
 		/*if (ferror(source)) {
 			(void)deflateEnd(&strm);
@@ -227,7 +227,7 @@ int defImpl_Encode_FP(FILE *source, char **dest, int64_t inSize,int64_t* outSize
 
 	/* compress until end of file */
 	do {
-		strm.avail_in = fread(in, 1, CHUNK, source);
+		strm.avail_in = (uint32_t)fread(in, 1, CHUNK, source);
 		if (ferror(source)) {
 			(void)deflateEnd(&strm);
 			return Z_ERRNO;
@@ -283,7 +283,7 @@ int defImpl_Encode_FF_beta(FILE *source, FILE *dest)
 
 	/* compress until end of file */
 	do {
-		strm.avail_in = fread(in, 1, CHUNK, source);
+		strm.avail_in = (uint32_t)fread(in, 1, CHUNK, source);
 		if (ferror(source)) {
 			(void)deflateEnd(&strm);
 			return Z_ERRNO;

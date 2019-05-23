@@ -7,7 +7,7 @@
 
 CoreDumpBlock * cdBlock_CreateNewChild_F(FILE * fst, int64_t  first_frame, int depth_a, int no_write);
 
-void cdBlock_DeleteBlock(CoreDumpBlock * cdbptr);
+void cdBlock_DeleteBlock(CoreDumpBlock ** cdbptr);
 
 int cdBlock_addFrame_F(CoreDumpBlock * cdbptr, CoreDumpTop * cdtptr, FILE * fst, FILE * frame);
 

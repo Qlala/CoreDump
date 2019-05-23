@@ -4,6 +4,14 @@
 #include "DeflateImplementation.h"
 #include "DeltaImplementation.h"
 
+#ifndef BASIC_INTERFACE
+#define cd_CreateFile Create
+#define  cd_addFrame_P AddCycle
+#define  cd_CloseFile Close
+#define CoreDumpFile dump_writer
+#endif
+
+
 CoreDumpFile* cd_CreateFile(char * filename){
 	//creation du coreTop en utilisant sont créateur par default
 	CoreDumpTop* top = cdTop_BlankImplementation(MAX_BLOCK_COUNT_PER_LEVEL);
@@ -27,7 +35,7 @@ void cd_addFrame_P(CoreDumpFile * cdfptr, char * frame, int64_t size_frame) {
 }
 
 void cd_CloseFile(CoreDumpFile * cdfptr) {
-	CoreDumpTop* top = cdfptr->top;
+	CoreDumpTop* top = ((struct CoreDumpFile_S*)cdfptr)->top;
 	cdTop_FinishTree(cdfptr);
 	cdTop_CloseDumpFile(cdfptr);
 #ifdef ACTIVATE_COMPRESSION

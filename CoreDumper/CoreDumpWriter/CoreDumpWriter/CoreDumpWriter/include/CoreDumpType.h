@@ -43,6 +43,7 @@ struct CoreDumpTop_S
 	void* par_frame_operationParam;
 	int (*per_frame_operation_F)(FILE* dst,CoreDumpHeader* cdhptr,CoreDumpTop* cdtptr,FILE* frame,int64_t* size);
 	int(*per_frame_operation_P)(FILE* dst,CoreDumpHeader* cdhptr, CoreDumpTop* cdtptr, char* frame, int64_t* size);
+
 	//Semaphore
 #ifdef _WIN32
 	HANDLE protection_Mutex;

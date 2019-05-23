@@ -67,6 +67,8 @@ void cdHeader_TerminateBlock(coreDumpHeader * cdptr, FILE * fst);
 
 void cdHeader_UpdateHeader(coreDumpHeader * cdptr, FILE * fst);
 
+void cdHeader_UpdateHeader_no_restore(coreDumpHeader * cdptr, FILE * fst);
+
 void cdHeader_UpdateFromFile(coreDumpHeader * cdptr, FILE * fst);
 
 void cdHeader_ReadHeader_F(coreDumpHeader * cdptr, FILE * fst);

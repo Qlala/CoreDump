@@ -78,6 +78,11 @@ void cdHeader_UpdateHeader(coreDumpHeader* cdptr, FILE* fst)//ne chnage pas la p
 	cdHeader_WriteHeader_F(cdptr, fst);
 	_fseeki64(fst, c_pos, SEEK_SET);
 }
+void cdHeader_UpdateHeader_no_restore(coreDumpHeader* cdptr, FILE* fst)//ne chnage pas la position dans le stream
+{
+	cdHeader_goStartIndex_F(cdptr, fst);
+	cdHeader_WriteHeader_F(cdptr, fst);
+}
 void cdHeader_UpdateFromFile(coreDumpHeader* cdptr, FILE* fst) {
 	int64_t  c_pos = _ftelli64(fst);
 	cdHeader_goStartIndex_F(cdptr, fst);
