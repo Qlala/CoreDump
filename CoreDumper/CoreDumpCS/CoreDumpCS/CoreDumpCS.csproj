@@ -83,6 +83,7 @@
     <Compile Include="CD_beta.cs" />
     <Compile Include="Class1.cs" />
     <Compile Include="CoreDumpDelta.cs" />
+    <Compile Include="CoreDumpInterface.cs" />
     <Compile Include="LIB\FossilDelta-master\Source\Delta.cs" />
     <Compile Include="LIB\FossilDelta-master\Source\Reader.cs" />
     <Compile Include="LIB\FossilDelta-master\Source\RollingHash.cs" />
