@@ -63,6 +63,8 @@ int64_t  cdHeader_FrameInBlock(coreDumpHeader * cdptr);
 
 void cdHeader_goStartIndex_F(coreDumpHeader * cdptr, FILE * fst);
 
+void cdHeader_goBlockEnd_F(coreDumpHeader * cdptr, FILE * fst);
+
 void cdHeader_TerminateBlock(coreDumpHeader * cdptr, FILE * fst);
 
 void cdHeader_UpdateHeader(coreDumpHeader * cdptr, FILE * fst);

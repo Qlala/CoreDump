@@ -13,5 +13,5 @@
 #define CHUNK (1<<20)//taille du  buffer pour la déccompression
 #define COMPRESSION_LEVEL Z_BEST_SPEED //Paramètre de compression (défini d'après ZLIB) default:Z_DEFAULT_COMPRESSION
 //deltaImplementation
-#define DELTA_THRESHOLD 0.1//seuil en fraction de la taille d'un cycle default:0.01 (plus que 0.5 semble être mauvais)
-#define DELTA_WINDOW 1024 //taille des block (fenêtre) pour le calcul des deltas 1024
+#define DELTA_THRESHOLD 0.05//seuil en fraction de la taille d'un cycle default:0.01 (plus que 0.5 semble être mauvais)
+#define DELTA_WINDOW 256 //taille des block (fenêtre) pour le calcul des deltas 1024

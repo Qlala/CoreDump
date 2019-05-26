@@ -63,6 +63,11 @@ void cdHeader_goStartIndex_F(coreDumpHeader* cdptr, FILE* fst)
 	_fseeki64(fst, cdptr->startPosition, SEEK_SET);
 }
 
+void cdHeader_goBlockEnd_F(coreDumpHeader* cdptr, FILE* fst)
+{
+	_fseeki64(fst, cdptr->startPosition + cdptr->totalSize, SEEK_SET);
+}
+
 void cdHeader_TerminateBlock(coreDumpHeader* cdptr, FILE* fst)
 {
 	cdptr->configuration |= FINISHED;

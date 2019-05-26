@@ -40,13 +40,13 @@ char* cdSepFile_gen(int depth,int nb,void* x) {
 	cdSepFile_createDirectory(file_name_without_ext);
 
 	char* sep_file_name_form = malloc(2*strlen(file_name) + 30);
-	size_t len = 2 * strlen(file_name) + 30 + ceil(log10((*count)));
+	size_t len = 2 * strlen(file_name) + 40 + ceil(log10((*count)));
 	char* sep_file_name = malloc(len);
 	sep_file_name_form[0] = '\0';
-	strcat(sep_file_name_form, file_name_without_ext);
-	strcat(sep_file_name_form, "/");
-	strcat(sep_file_name_form, file_name_without_ext);
-	strcat(sep_file_name_form, ".part%i.cd_frag");
+	strncat(sep_file_name_form, file_name_without_ext, strlen(file_name));
+	strncat(sep_file_name_form, "/",1);
+	strncat(sep_file_name_form, file_name_without_ext,strlen(file_name));
+	strncat(sep_file_name_form, ".part%i.cd_frag",20);
 	free(file_name_without_ext);
 	snprintf(sep_file_name, len ,sep_file_name_form,*count);
 	free(sep_file_name_form);

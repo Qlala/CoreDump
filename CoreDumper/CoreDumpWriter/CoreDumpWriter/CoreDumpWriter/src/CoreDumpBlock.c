@@ -68,13 +68,18 @@ CoreDumpBlock* cdBlock_CreateTree_F(FILE* fst,int64_t  first_frame,int depth_a,i
 	}
 	return cdb;
 }
-void cdBlock_CreateNewChildFile_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE* fst)
-{
+void cdBlock_CleanChildFile_F(CoreDumpBlock* cdbptr) {
 	if (cdbptr->nodeFile != NULL) {
 		fclose(cdbptr->nodeFile);
-		
 	}
-	if(cdbptr->nodeFileName!=NULL)free(cdbptr->nodeFileName);//pas de fuite
+	if (cdbptr->nodeFileName != NULL)free(cdbptr->nodeFileName);//pas de fuite
+	cdbptr->nodeFileName = NULL;
+	cdbptr->nodeFile = NULL;
+}
+
+void cdBlock_CreateNewChildFile_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE* fst)
+{
+	cdBlock_CleanChildFile_F(cdbptr);
 
 	cdbptr->nodeFileName =cdTop_SeparateFileName(cdtptr,cdbptr->depth, cdbptr->blockCount);
 	remove(cdbptr->nodeFileName);//supression du fichier si il existe déja
@@ -84,8 +89,6 @@ void cdBlock_CreateNewChildFile_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FI
 	if (!cdbptr->nodeFile) {
 		printf("error création de fichier \n");
 	}
-	//on inscris dans le fst le nom du fichier
-	_fseeki64(cdbptr->nodeFile, 0, SEEK_SET);
 	cdBlock_WriteFileName_F(cdbptr, fst);
 }
 CoreDumpBlock* cdBlock_CreateNewChild_F(FILE* fst, int64_t  first_frame, int depth_a,int no_write)
@@ -102,9 +105,7 @@ CoreDumpBlock* cdBlock_CreateNewChild_F(FILE* fst, int64_t  first_frame, int dep
 void cdBlock_DeleteBlock(CoreDumpBlock** cdbptr) {
 	if ((*cdbptr)->child != NULL)cdBlock_DeleteBlock(&(*cdbptr)->child);
 	cdHeader_Delete((*cdbptr)->header_ptr);
-	if((*cdbptr)->nodeFileName!=NULL)free((*cdbptr)->nodeFileName);
-	if((*cdbptr)->nodeFile!=NULL)fclose((*cdbptr)->nodeFile);
-	free(*cdbptr);
+	cdBlock_CleanChildFile_F(*cdbptr);
 	*cdbptr = NULL;
 }
 void cdBlock_propagateImportant(CoreDumpBlock* cdbptr) {
@@ -530,8 +531,7 @@ int cdBlock_addFrameTreeFile_F(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*
 		else//le predicteur à échouer il faut arrêter
 		{
 			cdHeader_TerminateBlock(cdbptr->header_ptr,fst);//on met le Block comme terminé (update aussi le header
-			if(cdbptr->nodeFile !=NULL)fclose(cdbptr->nodeFile);
-			cdbptr->nodeFile = NULL;
+			cdBlock_CleanChildFile_F(cdbptr);
 			if (!cdTop_MaxBlockCountReach(cdtptr, cdbptr->depth, cdbptr->blockCount))
 			{
 				printf_if_verbose("echec predicteur d=%i, on fini avec Totalize= %lli (entre %lli et %lli )\n",cdbptr->depth,cdbptr->header_ptr->totalSize,cdbptr->header_ptr->firstFrame,cdbptr->header_ptr->lastFrame);
@@ -670,8 +670,7 @@ int cdBlock_addFrameTreeFile_P(CoreDumpBlock* cdbptr, CoreDumpTop* cdtptr, FILE*
 		else//le predicteur à échouer il faut arrêter
 		{
 			cdHeader_TerminateBlock(cdbptr->header_ptr, fst);//on met le Block comme terminé (update aussi le header
-			if (cdbptr->nodeFile != NULL)fclose(cdbptr->nodeFile);
-			cdbptr->nodeFile = NULL;
+			cdBlock_CleanChildFile_F(cdbptr);
 			if (!cdTop_MaxBlockCountReach(cdtptr, cdbptr->depth, cdbptr->blockCount))
 			{
 				printf_if_verbose("echec predicteur d=%i, on fini avec Totalize= %lli (entre %lli et %lli )\n", cdbptr->depth, cdbptr->header_ptr->totalSize, cdbptr->header_ptr->firstFrame, cdbptr->header_ptr->lastFrame);
@@ -724,10 +723,7 @@ void cdBlock_FinishTree_F(CoreDumpBlock* cdbptr,CoreDumpTop* cdtptr,FILE* fst)
 		if (cdHeader_isExternFile(cdbptr->header_ptr)) {
 			cdBlock_FinishTree_F(cdbptr->child, cdtptr, cdbptr->nodeFile);
 			cdBlock_addChildBlockFile_F(cdbptr->child->header_ptr, cdbptr->header_ptr, cdtptr, &cdbptr->nodeFile, cdbptr->nodeFileName, cdbptr->depth, &cdbptr->blockCount, 0);
-			if(cdbptr->nodeFile!=NULL)fclose(cdbptr->nodeFile);
-			cdbptr->nodeFile = NULL;
-			if (cdbptr->nodeFileName != NULL)free(cdbptr->nodeFileName);
-			cdbptr->nodeFileName = NULL;
+			cdBlock_CleanChildFile_F(cdbptr);
 		}
 		else {
 			cdBlock_FinishTree_F(cdbptr->child, cdtptr, fst);
@@ -741,10 +737,10 @@ void cdBlock_FinishTree_F(CoreDumpBlock* cdbptr,CoreDumpTop* cdtptr,FILE* fst)
 
 void cdBlock_WriteFileName_F(CoreDumpBlock* cdbptr, FILE* fst) 
 {
-	int64_t  start_pos = cdbptr->header_ptr->startPosition + cdbptr->header_ptr->totalSize;
-	_fseeki64(fst, start_pos, SEEK_SET);
+	cdHeader_goBlockEnd_F(cdbptr->header_ptr,fst);
 	fwrite(cdbptr->nodeFileName, 1, strlen(cdbptr->nodeFileName), fst);
 	cdHeader_BlockMarker_F(fst);
+	fflush(fst);
 }
 
 //TODO => finir la fonction (gestion du cas fichier extern)
