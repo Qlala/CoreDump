@@ -16,6 +16,6 @@ char * get_time_diff(char* buff,size_t size, struct timespec before, struct time
 	uint64_t nano=nsec_diff%1000;
 	uint64_t sec=sec_diff%60;
 	uint64_t min=sec_diff/60;
-	sprintf_s(buff,size, "%llu:%llu.%03llu:%03llu:%03llu\0", min, sec, mili, micro, nano);
+	sprintf_s(buff,size, "%llu:%2llu.%03llu:%03llu:%03llu\0", min, sec, mili, micro, nano);
 	return buff;
 }

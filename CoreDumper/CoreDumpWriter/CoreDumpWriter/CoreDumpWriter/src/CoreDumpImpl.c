@@ -26,10 +26,11 @@ CoreDumpFile* cd_CreateFile(char * filename){
 	return test;
 }
 
+/* code supprimé => recherché dans un commit pour reprendre les codes lié à cette fonction
 void cd_addFrame_F(CoreDumpFile * cdfptr, FILE * frame) {
 	cdTop_addFrame_F(cdfptr, frame);
 }
-
+*/
 void cd_addFrame_P(CoreDumpFile * cdfptr, char * frame, int64_t size_frame) {
 	cdTop_addFrame_P(cdfptr, frame, size_frame);
 }

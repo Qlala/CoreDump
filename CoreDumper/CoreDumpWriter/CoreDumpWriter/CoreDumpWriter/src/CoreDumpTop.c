@@ -121,7 +121,6 @@ void cdTop_CloseDumpFile(CoreDumpFile* cdfptr) {
 	fclose(cdfptr->file);
 	free(cdfptr->fileName);
 	cdBlock_DeleteBlock(&cdfptr->tree);
-	//free(cdfptr->top);
 }
 int cdTop_EncodingNeeded(CoreDumpTop* cdtptr, int depth) {
 	return cdtptr->EncodingNeeded(depth, cdtptr->EncodingNeeeded_param);
@@ -144,7 +143,7 @@ void cdTop_rebaseTree(CoreDumpFile* cdfptr) {
 	if (cdTop_SeparateFileNeeded(cdfptr->top,temp->depth)) {//on doit crée un nouveau fichier s&paré
 		cdHeader_SetExternFile(temp->header_ptr);
 		fclose(cdfptr->file);
-		//nodefilename = NULL car il temp vie d'etre créer
+		//nodefilename = NULL car il viens d'etre créer
 		temp->nodeFileName = cdTop_SeparateFileName(cdfptr->top,temp->depth, temp->blockCount);//on génère le nom du fichier
 		cdTop_MoveFile(cdfptr->fileName, temp->nodeFileName);//on l'échange avec le fichier qui contenait l'arbre
 		fopen_s(&temp->nodeFile ,temp->nodeFileName, "rb");//on rouvre le fichier qui contient l'abre d'avant
@@ -161,16 +160,8 @@ void cdTop_rebaseTree(CoreDumpFile* cdfptr) {
 		//cdHeader_UpdateHeader(cdfptr->tree->header_ptr, cdfptr->file);
 		cdfptr->tree->child = cdBlock_CreateNewChild_F(cdfptr->file,cdfptr->tree->header_ptr->lastFrame, cdfptr->tree->depth - 1, 0);//temp n'as pas de child car créer en mode no write
 	}
-	else{//pas de fichier séparé
-#ifdef TEST
-
-
-		cdBlock_addChildBlock_F(cdfptr->tree->header_ptr, temp->header_ptr, cdfptr->top, cdfptr->file, temp->depth, &temp->blockCount, 1);
-		cdHeader_UpdateHeader(temp->header_ptr, cdfptr->file);
-		//cdHeader_BlockEnd(temp->header_ptr);
-		cdBlock_DeleteBlock(cdfptr->tree);
-		cdfptr->tree = temp;
-#else//plus de zone critique
+	else{//pas de fichier séparé => on doit donc recopier pour rebasé l'abre
+		//version sans zone critique 
 		char * tempfilename = malloc(strlen(cdfptr->fileName) + 20);
 		tempfilename[0] = '\0';
 		strcat(tempfilename, cdfptr->fileName);
@@ -179,7 +170,6 @@ void cdTop_rebaseTree(CoreDumpFile* cdfptr) {
 		cdBlock_addChildBlockCopy_F(cdfptr->tree->header_ptr, temp->header_ptr, cdfptr->top, cdfptr->file, tempfile, temp->depth, &temp->blockCount);
 		int64_t end_pos = _ftelli64(tempfile);
 		cdHeader_UpdateHeader(temp->header_ptr, tempfile);
-		//cdHeader_BlockEnd(temp->header_ptr);
 		cdBlock_DeleteBlock(&cdfptr->tree);
 		cdfptr->tree = temp;
 		fflush(tempfile);
@@ -190,11 +180,9 @@ void cdTop_rebaseTree(CoreDumpFile* cdfptr) {
 		cdfptr->file = fopen(cdfptr->fileName, "rb+");
 		_fseeki64(cdfptr->file, end_pos, SEEK_SET);
 		free(tempfilename);
-#endif // 1
-
 		cdfptr->tree->child = cdBlock_CreateNewChild_F(cdfptr->file, cdfptr->tree->header_ptr->lastFrame, cdfptr->tree->depth - 1, 0);//temp n'as pas de child car créer en mode no write
 	}
-	printf("arbre rebase\n");//remetre sous condition verbose
+	printf_if_verbose("arbre rebase\n");
 }
 
 void cdTop_FinishTree(CoreDumpFile* cdfptr) {
@@ -202,13 +190,7 @@ void cdTop_FinishTree(CoreDumpFile* cdfptr) {
 	cdTop_rebaseTree(cdfptr);
 }
 
-void cdTop_addFrame_F(CoreDumpFile* cdfptr,FILE* frame)
-{ 
-	if (cdBlock_addFrame_F(cdfptr->tree, cdfptr->top, cdfptr->file,frame) )
-	{
-		cdTop_rebaseTree(cdfptr);
-	}
-}
+
 void cdTop_addFrame_P(CoreDumpFile* cdfptr, char* frame,int64_t size_frame)
 {
 	if (cdBlock_addFrame_P(cdfptr->tree, cdfptr->top, cdfptr->file, frame,size_frame))
@@ -217,19 +199,7 @@ void cdTop_addFrame_P(CoreDumpFile* cdfptr, char* frame,int64_t size_frame)
 	}
 }
 
-/*
-not needed
-int cdTop_perFrameOp_f(CoreDumpHeader * cdhptr, CoreDumpTop * cdtptr, FILE * frame, int64_t size)
-{
-	cdtptr->per_frame_operation_F(cdhptr,cdtptr,frame,size,)
-	return 0;
-}
 
-int cdTop_perFrameOp_P(CoreDumpHeader * cdhptr, CoreDumpTop * cdtptr, char * frame, int64_t size)
-{
-	return 0;
-}
-*/
 int bImpl_MaxBlockCountReach(int depth, int count,void* param) {
 	return count >= *(int*)param;
 }
@@ -239,11 +209,7 @@ int bImpl_EncodingNeeded(int depth,void* param) {
 int bImpl_SeparateFileNeeded(int depth,void* param) {
 	return 0;
 }
-int bImpl_per_frame_operation_F(FILE* fst,CoreDumpHeader* cdhptr, CoreDumpTop* cdtptr, FILE* frame, int64_t* size){
-	printf_if_verbose("default per frame op F \n");
-	//Size doit être changé  pour corresspondre à la taille écrite.
-	return 0;
-}
+
 int bImpl_per_frame_operation_P(FILE* fst,CoreDumpHeader* cdhptr, CoreDumpTop* cdtptr, char* frame, int64_t* size) {
 	printf_if_verbose("default per frame op P \n");
 	//Size doit être changé  pour corresspondre à la taille écrite.
@@ -262,7 +228,6 @@ CoreDumpTop* cdTop_BlankImplementation(int max_block_count) {
 	cdt->MaxBlockCountReach = bImpl_MaxBlockCountReach;
 	cdt->EncodingNeeded = bImpl_EncodingNeeded;
 	cdt->SeparateFileNeeded = bImpl_SeparateFileNeeded;
-	cdt->per_frame_operation_F=bImpl_per_frame_operation_F;
 	cdt->per_frame_operation_P = bImpl_per_frame_operation_P;
 	cdTop_InitSemaphore(cdt);
 	return cdt;

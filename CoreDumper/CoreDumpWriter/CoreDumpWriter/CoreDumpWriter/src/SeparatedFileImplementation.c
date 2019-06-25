@@ -25,7 +25,7 @@ int cdSepFile_createDirectory(char* dir) {
 #endif // _WIN32	
 }
 
-
+//fonction qui gèenre le nom des fichier suplémentaire
 char* cdSepFile_gen(int depth,int nb,void* x) {
 	char* file_name = *(((sepfile_struct*)x)->file_trans);
 	int* count = &(((sepfile_struct*)x)->fragment_total);

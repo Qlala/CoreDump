@@ -2,6 +2,7 @@
 #include "DeltaImplementation.h"
 #include <stdio.h>
 #include "CoreDumpUtils.h"
+#include "CoreDumpConfig.h"
 //vc diff implementation.
 
 
@@ -152,7 +153,6 @@ int cdDelta_per_frame_operation_P(FILE* fst,CoreDumpHeader* cdhptr, CoreDumpTop*
 }
 
 void cdDelta_SetImpl(CoreDumpTop* cdtptr) {
-	cdtptr->per_frame_operation_F = cdDelta_per_frame_operation_F;
 	cdtptr->per_frame_operation_P = cdDelta_per_frame_operation_P;
 	cdtptr->par_frame_operationParam = malloc(sizeof(struct DeltaRefSave));
 	struct DeltaRefSave* refs = (cdtptr->par_frame_operationParam);
@@ -162,7 +162,6 @@ void cdDelta_SetImpl(CoreDumpTop* cdtptr) {
 }
 
 void cdDelta_CleanTop(CoreDumpTop * cdtptr) {
-	cdtptr->per_frame_operation_F ;//remettre a zero
 	cdtptr->per_frame_operation_P;
 	struct DeltaRefSave* refs = (cdtptr->par_frame_operationParam);
 	refs->ref_frame_n = 0;

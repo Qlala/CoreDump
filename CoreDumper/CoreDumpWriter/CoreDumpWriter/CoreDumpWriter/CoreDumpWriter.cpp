@@ -19,7 +19,7 @@ extern "C" {
 #include "CoreDumpImpl.h"
 
 }
-#define TEST_FRAME_COUNT 100000
+#define TEST_FRAME_COUNT 5000
 std::minstd_rand0 gen(22);//23
 void generate_test_frame(const char* filename,size_t frame_size ,double proba_sortie_de_serie) {
 	FILE* myfile = fopen(filename, "wb");

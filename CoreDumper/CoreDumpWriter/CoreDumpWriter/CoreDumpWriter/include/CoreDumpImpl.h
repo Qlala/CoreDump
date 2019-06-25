@@ -1,12 +1,12 @@
 #include<stdint.h>
 //configuration de l'implémentation
-#define COMPRESSION_AND_SEPARATION_DEPTH_LEVEL 2
-#define ACTIVATE_COMPRESSION
-#define MAX_BLOCK_COUNT_PER_LEVEL 100
+#define COMPRESSION_AND_SEPARATION_DEPTH_LEVEL 3// nombre de niveau avant de faire un fichier séparé et séparée (niveau 0 compte)
+#define ACTIVATE_COMPRESSION //active la compression ( codeur enthropique)
+#define MAX_BLOCK_COUNT_PER_LEVEL 100//nombre d'enfant pas parent
 //#define BASIC_INTERFACE
 
 //definition des fonction
-
+//TODO format des nomber des fichier.
 
 #ifdef BASIC_INTERFACE
 #pragma once
@@ -15,7 +15,6 @@
 #include "CoreDumpTop.h"
 CoreDumpFile * cd_CreateFile(char * filename);
 
-void cd_addFrame_F(CoreDumpFile * cdfptr, FILE * frame);
 
 void cd_addFrame_P(CoreDumpFile * cdfptr, char * frame, int64_t size_frame);
 

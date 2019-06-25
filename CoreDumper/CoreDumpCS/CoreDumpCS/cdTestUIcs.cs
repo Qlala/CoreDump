@@ -10,6 +10,7 @@ using System.IO;
 using System.Windows.Forms;
 using CoreDumper;
 using MyCoders;
+using System.Diagnostics;
 namespace ConsoleApp1
 {
     public partial class cdTestUIcs : Form
@@ -31,6 +32,7 @@ namespace ConsoleApp1
             this.Frame_TextBox.Text = "0";
             this.Addr_TextBox.Text = "0";
             this.Size_TextBox.Text = "8";
+            this.textBox1.Text = "1000";
         }
 
         public cdTestUIcs(string file_to_open)
@@ -150,6 +152,59 @@ namespace ConsoleApp1
          }
 
         private void toolStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+
+        }
+        private void performance_test(string file_name,int N)
+        {
+            Random rnd = new Random();
+            Stopwatch sw = new Stopwatch();
+            //mode sequentiel
+            File.WriteAllText(file_name, "sequential,time,\n");
+            for (int i = 0; i < N; i++)
+            {
+                sw.Reset();
+                sw.Start();
+                opener.randomAccesFrame(i, rnd.Next(0, (int)frame_size), 256);
+                sw.Stop();
+                File.AppendAllText(file_name, "" + i + "," + sw.ElapsedMilliseconds+",\n");
+                
+            }
+            //aléatoire : 
+            File.AppendAllText(file_name, "random,time,\n");
+            for (int i = 0; i < N; i++)
+            {
+                sw.Reset();
+                sw.Start();
+                opener.randomAccesFrame(rnd.Next(0,(int)last_frame), rnd.Next(0, (int)frame_size), 256);
+                sw.Stop();
+                File.AppendAllText(file_name, "" + i + "," + sw.ElapsedMilliseconds + ",\n");
+                
+            }
+
+        }
+
+
+        //gestion du test de performance
+        private void button3_Click(object sender, EventArgs e)
+        {
+            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+            {
+                saveFileDialog.DefaultExt = ".csv";
+                saveFileDialog.AddExtension = true;
+                saveFileDialog.Filter = "csv files (*.csv)|*.csv|All files (*.*)|*.*";
+                saveFileDialog.InitialDirectory = System.IO.Directory.GetCurrentDirectory();
+
+                if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    int N = Int32.Parse(textBox1.Text);
+                    performance_test(saveFileDialog.FileName,N);
+
+                }
+            }
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
         {
 
         }
